@@ -17,6 +17,7 @@ export type ProviderMarkId =
   | 'pi'
   | 'claude'
   | 'codebuddy'
+  | 'devin'
   | 'kimi'
   | 'deepseek'
   | 'hunyuan'
@@ -41,6 +42,7 @@ const OWN_MARKS: ReadonlyMap<string, ProviderMarkId> = new Map<string, ProviderM
   [cliRoute('pi'), 'pi'],
   [cliRoute('claude'), 'claude'],
   [cliRoute('codebuddy'), 'codebuddy'],
+  [cliRoute('devin'), 'devin'],
   [cliRoute('kimi'), 'kimi'],
 ])
 

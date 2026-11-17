@@ -4,9 +4,8 @@ import { describe, expect, it } from 'vitest'
 const AGENT = /^ {10}- id: (\S+)\n {12}name: (.+)$/gm
 
 describe('the default CLIs', () => {
-  // This plugin brings desktop-cc-gui's experience to DSH, so these follow its
-  // `CLI_DISPLAY_NAMES` for the names and its `ENGINE_IDS` for the order.
-  it('match desktop-cc-gui in name and order', () => {
+  // Existing names and order follow desktop-cc-gui; additional CLIs are included too.
+  it('register the expected names and order', () => {
     const patch = readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
     expect([...patch.matchAll(AGENT)].map(([, id, name]) => [id, name])).toEqual([
       ['claude', 'Claude Code'],
@@ -15,7 +14,13 @@ describe('the default CLIs', () => {
       ['pi', 'PI CLI'],
       ['omp', 'OMP CLI'],
       ['opencode', 'OpenCode'],
+      ['devin', 'Devin CLI'],
       ['codebuddy', 'CodeBuddy CLI'],
     ])
+  })
+
+  it('starts Devin in ACP mode via PATH', () => {
+    const patch = readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
+    expect(patch).toMatch(/- id: devin\n\s+name: Devin CLI\n\s+command: devin\n\s+args: \[acp\]/)
   })
 })

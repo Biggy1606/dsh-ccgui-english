@@ -23,6 +23,7 @@ describe('ProviderMark', () => {
     ['cli-opencode', 'opencode', 'currentColor'],
     ['cli-omp', 'omp', 'url(#'],
     ['cli-codebuddy', 'codebuddy', 'url(#'],
+    ['cli-devin', 'devin', 'currentColor'],
     ['cli-kimi', 'kimi', 'currentColor'],
     ['cli-someone-elses', 'cli', 'currentColor'],
   ])('draws %s as the %s mark', (provider, mark, paint) => {

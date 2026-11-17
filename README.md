@@ -5,7 +5,7 @@
 
 # DSH CCGUI
 
-Use Claude Code, Kimi, Codex, PI, OMP, OpenCode, and other ACP-compatible agent CLIs in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). Select a CLI beside the composer and use DSH's interface for conversations, tool records, and approval requests. The CLI executes its own tools and manages its own context and account.
+Use Claude Code, Kimi, Codex, PI, OMP, OpenCode, Devin, and other ACP-compatible agent CLIs in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). Select a CLI beside the composer and use DSH's interface for conversations, tool records, and approval requests. The CLI executes its own tools and manages its own context and account.
 
 [![CI][ci-shield]][ci-link] [![Coverage][coverage-shield]][coverage-link] [![License][license-shield]][license-link] ![DSH][dsh-shield]
 
@@ -28,7 +28,7 @@ dsh plugin --profile web add dsh-ccgui@1.0.2
 
 Replace `add ...` with `remove dsh-ccgui` to uninstall. To install from a local checkout, run `pnpm install && pnpm run build`, then provide the checkout path in **Add plugin** or instead of the package name in the command above. Peer dependency warnings from pnpm can be ignored.
 
-The included Claude, Kimi, Codex and PI adapters are fetched with `npx`; OMP and OpenCode must be installed separately. CodeBuddy is disabled by default and has not been verified with a real account. CLI account usage and charges follow that CLI's own configuration.
+The included Claude, Kimi, Codex and PI adapters are fetched with `npx`; OMP, OpenCode and Devin must be installed separately and available on DSH's PATH. Devin uses `devin acp`; a basic text-only ACP exchange succeeded with Devin CLI 3000.11.234, but approvals and stopping behavior have not yet been verified. CodeBuddy is disabled by default and has not been verified with a real account. CLI account usage and charges follow that CLI's own configuration.
 
 ## Configuration
 
@@ -47,6 +47,7 @@ To customize agents, add a `ccgui` entry to the profile's `cordis.patch.yml`. Th
       - { id: pi, name: PI CLI, command: npx, args: [-y, 'pi-acp@0.0.34'] }
       - { id: omp, name: OMP CLI, command: omp, args: [acp] }
       - { id: opencode, name: OpenCode, command: opencode, args: [acp] }
+      - { id: devin, name: Devin CLI, command: devin, args: [acp] }
       - { id: codebuddy, name: CodeBuddy CLI, command: codebuddy, args: [--acp] }
       - { id: my-cli, name: My CLI, command: my-cli, args: [acp] }
 ```
@@ -67,7 +68,7 @@ For example, to have OpenCode ask before edits and shell commands, put this in t
 
 CLI permission requests are forwarded to DSH approval cards. DSH's `/permission` setting does not determine whether the CLI asks, but affects who answers when it does. For EXP auto-review, explicitly configure a non-CLI `reviewProvider` and, optionally, `reviewModel`; review requests can contain conversation content and incur provider charges. A reviewer cannot undo an operation that the CLI executed before reporting it. Even in full-access mode, a CLI's own requests can still appear for approval.
 
-In the original author's single-machine default-configuration tests, OpenCode stopped its command when stopped; Codex commands already started and Claude commands sent to the background continued until session closure. Behavior varies by CLI version and configuration, so verify it for your setup.
+In the original author's single-machine default-configuration tests, OpenCode stopped its command when stopped; Codex commands already started and Claude commands sent to the background continued until session closure. Devin's approval and stopping behavior has not yet been verified. Behavior varies by CLI version and configuration, so verify it for your setup.
 
 ## Limitations and troubleshooting
 

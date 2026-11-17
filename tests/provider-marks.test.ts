@@ -9,6 +9,7 @@ describe('markOf', () => {
     ['cli-pi', 'pi'],
     ['cli-claude', 'claude'],
     ['cli-codebuddy', 'codebuddy'],
+    ['cli-devin', 'devin'],
     ['cli-kimi', 'kimi'],
     ['deepseek', 'deepseek'],
     ['my-deepseek-proxy', 'deepseek'],
