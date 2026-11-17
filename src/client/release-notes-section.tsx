@@ -13,15 +13,15 @@ import { RELEASE_NOTES } from './release-notes.ts'
 import type { ReleaseNote, ReleaseNoteItem, ReleaseNoteSection } from './release-notes.ts'
 import { PLUGIN_VERSION } from './settings-about.tsx'
 
-const INTRO = '每个版本一页，翻页查看历史更新。'
-const CURRENT_LABEL = '当前版本'
-const EMPTY_TEXT = '还没有版本记录。'
-const PREV_LABEL = '上一页'
-const NEXT_LABEL = '下一页'
-const DOTS_LABEL = '选择版本'
+const INTRO = 'Browse the release history, one version per page.'
+const CURRENT_LABEL = 'Current version'
+const EMPTY_TEXT = 'No release notes yet.'
+const PREV_LABEL = 'Previous page'
+const NEXT_LABEL = 'Next page'
+const DOTS_LABEL = 'Select version'
 const NOTES_CLASS = 'dsh-ccgui-notes'
-const pageName = (version: string): string => `v${version} 版本记录`
-const pagePosition = (index: number, count: number): string => `第 ${index + 1} / ${count} 页`
+const pageName = (version: string): string => `v${version} release notes`
+const pagePosition = (index: number, count: number): string => `Page ${index + 1} of ${count}`
 
 // Pills and rows reuse the sizes of the neighbouring settings sections; only the pager is new.
 export const RELEASE_NOTES_STYLES = `
@@ -60,7 +60,7 @@ function InlineText({ text }: { readonly text: string }): ReactElement {
 function ItemRow({ item }: { readonly item: ReleaseNoteItem }): ReactElement {
   return (
     <li className={`${NOTES_CLASS}-item`}>
-      {item.title === undefined ? null : <strong>{item.title}：</strong>}
+      {item.title === undefined ? null : <strong>{item.title}: </strong>}
       <InlineText text={item.text} />
     </li>
   )

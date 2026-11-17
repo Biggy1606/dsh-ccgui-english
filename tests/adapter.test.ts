@@ -137,7 +137,7 @@ describe('CliBridgeAdapter.stream', () => {
     const options = request({ purpose: 'compaction' })
     await expect(collect(adapter.stream(options))).rejects.toMatchObject({
       code: 'UNSUPPORTED_OPTION',
-      message: 'CLI 会话不支持辅助模型请求（compaction）。',
+      message: 'CLI sessions do not support auxiliary model requests (compaction).',
     })
     expect(resolveSession).not.toHaveBeenCalled()
   })

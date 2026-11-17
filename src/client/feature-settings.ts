@@ -36,33 +36,36 @@ export const FEATURES_STORAGE_KEY = 'dsh-ccgui.features'
 export const FEATURES: readonly FeatureInfo[] = [
   {
     id: 'filesDefault',
-    title: '右侧栏默认打开工作区文件',
-    description: '展开右侧栏时直接显示工作区文件。关闭后恢复显示「开始」引导页。',
+    title: 'Open workspace files by default',
+    description: 'Show workspace files when opening the right sidebar. Disable to restore the Getting Started page.',
   },
   {
     id: 'gitChanges',
-    title: '右侧栏的变更页',
-    description: '在右侧栏查看、暂存并提交 Git 变更，和工作区文件一起打开。关闭后移除这个页面。',
+    title: 'Changes in the right sidebar',
+    description: 'View, stage and commit Git changes alongside workspace files. Disable to remove this page.',
   },
   {
     id: 'compactTabs',
-    title: '右侧栏紧凑页签',
-    description: '右侧栏的页签只显示图标，悬停时显示名称和关闭按钮。关闭后恢复图标加文字的宽页签。',
+    title: 'Compact right sidebar tabs',
+    description:
+      'Show only icons on right sidebar tabs; hover for the name and close button. Disable to restore wider tabs with labels.',
   },
   {
     id: 'terminalEntry',
-    title: '会话顶部的终端按钮',
-    description: '在会话标题栏一键打开或收起终端。关闭后从右侧栏打开终端。',
+    title: 'Terminal button in session header',
+    description: 'Toggle the terminal from the session header. When disabled, open it from the right sidebar.',
   },
   {
     id: 'launchScripts',
-    title: '会话顶部的启动脚本',
-    description: '在会话标题栏保存并一键运行常用命令。关闭只隐藏入口，已保存的脚本会保留。',
+    title: 'Startup scripts in session header',
+    description:
+      'Save and run common commands from the session header. Disabling hides the control but keeps saved scripts.',
   },
   {
     id: 'worktree',
-    title: '项目右键新建 Worktree',
-    description: '在左侧栏项目的右键菜单里新建 Git worktree，并作为新工作区打开。关闭后移除这个菜单项。',
+    title: 'Create worktrees from the project menu',
+    description:
+      'Create a Git worktree from the project context menu and open it as a workspace. Disable to remove the menu item.',
   },
 ]
 

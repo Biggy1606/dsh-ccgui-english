@@ -48,8 +48,8 @@ const SLOT = 'conversation.session.header.utilities'
 /** Just left of the header's overflow menu (order 0), right of the schedule chip (-5). */
 const ENTRY_ORDER = -1
 const ENTRY_CLASS = 'dsh-cli-terminal-entry'
-const TOOLTIP_LABEL = '终端'
-const ARIA_LABEL = '切换终端'
+const TOOLTIP_LABEL = 'Terminal'
+const ARIA_LABEL = 'Toggle terminal'
 /** Matches the delay of the neighboring header buttons' tooltips. */
 const TOOLTIP_DELAY_MS = 500
 

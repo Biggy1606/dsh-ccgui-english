@@ -2,7 +2,7 @@
 
 /**
  * The startup script control in the session header: a run button for the default script
- * and a chevron that lists every script plus "管理启动脚本…". With nothing saved yet the
+ * and a chevron that lists every script plus "Manage startup scripts…". With nothing saved yet the
  * run button opens the form instead. CC GUI puts one pill per script in its header and
  * edits on right-click; a split button keeps the header narrow however many scripts there
  * are, and keeps editing where it can be found.
@@ -41,11 +41,11 @@ export interface LaunchEntryProps {
 }
 
 const MANAGE_ID = 'dsh-ccgui.launch-scripts.manage'
-const SET_UP = '设置启动脚本'
-const RUN_PREFIX = '运行：'
-const MORE = '启动脚本'
-const MANAGE = '管理启动脚本…'
-const SAVE_FAILED = '没能保存启动脚本'
+const SET_UP = 'Set up startup scripts'
+const RUN_PREFIX = 'Run: '
+const MORE = 'Startup scripts'
+const MANAGE = 'Manage startup scripts…'
+const SAVE_FAILED = 'Could not save startup scripts'
 const TOOLTIP_DELAY_MS = 500
 
 function message(error: unknown): string {
@@ -95,7 +95,7 @@ function useLaunchActions({ sessionId, list, book, runner }: LaunchEntryProps) {
     // The dialog would cover the terminal the script is about to show up in.
     openPage(undefined)
     runner.run(sessionId, script).catch((error: unknown) => {
-      setToast(`没能运行「${scriptLabel(script)}」：${message(error)}`)
+      setToast(`Could not run "${scriptLabel(script)}": ${message(error)}`)
     })
   }
   const change = (next: readonly LaunchScript[]): void => {
@@ -103,7 +103,7 @@ function useLaunchActions({ sessionId, list, book, runner }: LaunchEntryProps) {
       book.write(cwd, next)
       setSaveError(undefined)
     } catch (error: unknown) {
-      setSaveError(`${SAVE_FAILED}：${message(error)}`)
+      setSaveError(`${SAVE_FAILED}: ${message(error)}`)
     }
   }
   return { scripts, page, toast, saveError, openPage, run, change, clearToast: () => setToast(undefined) }

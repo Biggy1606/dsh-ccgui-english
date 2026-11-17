@@ -238,6 +238,6 @@ export class CliModelCatalog {
   }
 
   private defaultName(list: CliModelList): string {
-    return `${nameOf(list, list.current)}（默认）`
+    return `${nameOf(list, list.current)} (default)`
   }
 }

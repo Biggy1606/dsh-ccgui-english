@@ -33,8 +33,8 @@ import { useRemoved } from './session-facts.ts'
 import { useStore } from './store.ts'
 import type { Store } from './store.ts'
 
-const NO_MODEL_LABEL = '请选择模型'
-const LOADING_LABEL = '正在加载模型…'
+const NO_MODEL_LABEL = 'Select a model'
+const LOADING_LABEL = 'Loading models…'
 
 /** What the slot hands this control for one session. */
 export interface ModelMenuInjected {
@@ -73,7 +73,7 @@ function ModelTrigger({ seat, models, pending, locked, label, anchorStyle }: Mod
       type="button"
       className={TRIGGER_CLASS}
       style={anchorStyle}
-      aria-label={models.current === undefined ? label : `选择模型，当前 ${label}`}
+      aria-label={models.current === undefined ? label : `Select model, current: ${label}`}
       aria-haspopup="menu"
       aria-expanded={showing}
       aria-controls={showing ? `${id}-menu` : undefined}
@@ -137,7 +137,7 @@ function ModelSeat(props: ModelSeatProps): ReactElement {
       {seat.failure !== undefined && (
         <Toast
           key={seat.failure.seq}
-          text={`切换模型失败：${seat.failure.text}`}
+          text={`Failed to change model: ${seat.failure.text}`}
           icon={<IconWarningOutlineRegular />}
           anchor={rootRef.current?.closest<HTMLElement>('[data-composer-card]') ?? null}
           onDone={seat.clearFailure}

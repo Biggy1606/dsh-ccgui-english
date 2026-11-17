@@ -214,7 +214,7 @@ function describeDiff(diff: CliFileDiff): string {
   return [
     `${diff.path}:`,
     ...lines.slice(0, PERMISSION_PREVIEW_LINES),
-    ...(hidden > 0 ? [`…（还有 ${hidden} 行）`] : []),
+    ...(hidden > 0 ? [`… (${hidden} more lines)`] : []),
   ].join('\n')
 }
 

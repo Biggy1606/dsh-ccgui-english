@@ -62,7 +62,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk))
     size += buffer.length
-    if (size > MAX_BODY_BYTES) throw new BodyTooLarge('请求内容过大')
+    if (size > MAX_BODY_BYTES) throw new BodyTooLarge('Request body is too large')
     chunks.push(buffer)
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
@@ -94,11 +94,11 @@ export function modeHandler(
   return async (req, res) => {
     const rejection = connection.requestRejection(req)
     if (rejection !== undefined) {
-      sendJson(res, rejection, { success: false, error: '未授权' })
+      sendJson(res, rejection, { success: false, error: 'Unauthorized' })
       return
     }
     if (req.method !== 'POST') {
-      sendJson(res, 405, { success: false, error: '只支持 POST' }, { allow: 'POST' })
+      sendJson(res, 405, { success: false, error: 'Only POST is supported' }, { allow: 'POST' })
       return
     }
     let fields: RequestFields | undefined
@@ -106,11 +106,14 @@ export function modeHandler(
       fields = fieldsOf(await readJson(req))
     } catch (error: unknown) {
       const tooLarge = error instanceof BodyTooLarge
-      sendJson(res, tooLarge ? 413 : 400, { success: false, error: tooLarge ? '请求内容过大' : '请求格式不正确' })
+      sendJson(res, tooLarge ? 413 : 400, {
+        success: false,
+        error: tooLarge ? 'Request body is too large' : 'Invalid request format',
+      })
       return
     }
     if (fields === undefined) {
-      sendJson(res, 400, { success: false, error: '请求缺少会话或 CLI' })
+      sendJson(res, 400, { success: false, error: 'Request is missing a session or CLI' })
       return
     }
     try {
@@ -122,7 +125,10 @@ export function modeHandler(
     } catch (error: unknown) {
       const known = error instanceof LlmError
       if (!known) warn(`ccgui: mode request failed: ${messageOf(error)}`)
-      sendJson(res, known ? 400 : 500, { success: false, error: known ? messageOf(error) : '切换模式失败，请查看日志' })
+      sendJson(res, known ? 400 : 500, {
+        success: false,
+        error: known ? messageOf(error) : 'Failed to switch mode; check the logs',
+      })
     }
   }
 }

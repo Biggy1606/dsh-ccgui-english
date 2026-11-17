@@ -173,21 +173,21 @@ function finishReason(end: TurnOutcome, label: string): FinishReason {
     case 'max_tokens':
       return { kind: 'max-tokens' }
     case 'cancelled':
-      return { kind: 'aborted', failure: { message: `${label} 已取消本轮。`, code: 'ABORTED' } }
+      return { kind: 'aborted', failure: { message: `${label} cancelled this turn.`, code: 'ABORTED' } }
     case 'refusal': {
       const detail = refusalDetail(end.text)
-      if (detail !== '') return failureFinish(`${label} 拒绝继续这个请求：${detail}`, 'CLI_REFUSAL')
+      if (detail !== '') return failureFinish(`${label} refused to continue this request: ${detail}`, 'CLI_REFUSAL')
       const behind = end.diagnostics?.trim() ?? ''
       const message =
         behind === ''
-          ? `${label} 拒绝继续这个请求，但未说明原因（可查看 CLI 日志了解详情）。`
-          : `${label} 拒绝继续这个请求：${behind}`
+          ? `${label} refused to continue this request without giving a reason (check the CLI logs for details).`
+          : `${label} refused to continue this request: ${behind}`
       return failureFinish(message, 'CLI_REFUSAL')
     }
     case 'max_turn_requests':
-      return failureFinish(`${label} 达到了单轮请求次数上限。`, 'CLI_TURN_LIMIT')
+      return failureFinish(`${label} reached the request limit for this turn.`, 'CLI_TURN_LIMIT')
     default:
-      return failureFinish(`${label} 以未知原因结束：${String(end.stopReason)}`, 'CLI_UNKNOWN_STOP')
+      return failureFinish(`${label} stopped for an unknown reason: ${String(end.stopReason)}`, 'CLI_UNKNOWN_STOP')
   }
 }
 
@@ -223,5 +223,5 @@ export function turnEndStep(blocks: BlockState, end: TurnOutcome, label: string,
 export function turnFailure(error: Error, label: string): LlmError {
   return error instanceof LlmError
     ? error
-    : new LlmError(`${label} 执行失败：${error.message}`, 'CLI_PROMPT_FAILED', { cause: error })
+    : new LlmError(`${label} failed: ${error.message}`, 'CLI_PROMPT_FAILED', { cause: error })
 }

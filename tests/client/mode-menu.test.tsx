@@ -58,14 +58,14 @@ function setup({
   return { read: reading, write: written, user: userEvent.setup() }
 }
 
-const trigger = async (): Promise<HTMLElement> => screen.findByRole('button', { name: /CLI 模式/ })
+const trigger = async (): Promise<HTMLElement> => screen.findByRole('button', { name: /CLI mode/ })
 
 afterEach(cleanup)
 
 describe('ModeMenu', () => {
   it('shows the mode the CLI is on', async () => {
     setup()
-    expect((await trigger()).getAttribute('aria-label')).toBe('CLI 模式，当前 Default')
+    expect((await trigger()).getAttribute('aria-label')).toBe('CLI mode, current: Default')
   })
 
   it('stays out of the way when the session has no CLI route', () => {
@@ -85,7 +85,7 @@ describe('ModeMenu', () => {
     await vi.waitFor(() => {
       expect(read).toHaveBeenCalled()
     })
-    expect(screen.queryByRole('button', { name: /CLI 模式/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /CLI mode/ })).toBeNull()
   })
 
   it('stays out of the way when the CLI reports an empty list', async () => {
@@ -93,7 +93,7 @@ describe('ModeMenu', () => {
     await vi.waitFor(() => {
       expect(read).toHaveBeenCalled()
     })
-    expect(screen.queryByRole('button', { name: /CLI 模式/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /CLI mode/ })).toBeNull()
   })
 
   it('stays out of the way when the route cannot be read', async () => {
@@ -101,7 +101,7 @@ describe('ModeMenu', () => {
     await vi.waitFor(() => {
       expect(read).toHaveBeenCalled()
     })
-    expect(screen.queryByRole('button', { name: /CLI 模式/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /CLI mode/ })).toBeNull()
   })
 
   it('lists the modes in the CLI order and marks the current one', async () => {
@@ -126,7 +126,7 @@ describe('ModeMenu', () => {
     await user.click(await trigger())
     await user.click(screen.getByRole('menuitemradio', { name: 'Plan' }))
     expect(write).toHaveBeenCalledWith('cli-x', 'plan')
-    expect(await screen.findByRole('button', { name: 'CLI 模式，当前 Plan' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'CLI mode, current: Plan' })).toBeTruthy()
   })
 
   it('leaves the CLI alone when the mode is already set', async () => {
@@ -154,8 +154,8 @@ describe('ModeMenu', () => {
   it('shows a pick the CLI has not confirmed yet, with when it applies', async () => {
     setup({ reply: { modes: MODES, pending: 'plan' } })
     const button = await trigger()
-    expect(button.getAttribute('aria-label')).toBe('CLI 模式，当前 Plan')
-    expect(button.getAttribute('title')).toContain('下一条消息发送时生效')
+    expect(button.getAttribute('aria-label')).toBe('CLI mode, current: Plan')
+    expect(button.getAttribute('title')).toContain('takes effect with the next message')
   })
 
   // Nothing changes a pick until a message runs, and nothing tells the control when that
@@ -182,7 +182,7 @@ describe('ModeMenu', () => {
     answer = { modes: { ...MODES, current: 'plan' }, pending: undefined }
     await vi.waitFor(
       () => {
-        expect(screen.getByRole('button', { name: /CLI 模式/ }).getAttribute('title')).not.toContain('下一条')
+        expect(screen.getByRole('button', { name: /CLI mode/ }).getAttribute('title')).not.toContain('next message')
       },
       { timeout: MODE_POLL_MS * 4 },
     )
@@ -192,7 +192,7 @@ describe('ModeMenu', () => {
     })
     expect(read.mock.calls.length).toBe(settled)
     rerender(view(false))
-    expect(screen.getByRole('button', { name: /CLI 模式/ }).getAttribute('title')).not.toContain('下一条')
+    expect(screen.getByRole('button', { name: /CLI mode/ }).getAttribute('title')).not.toContain('next message')
   })
 
   it('does not ask again before the session has a CLI to take the pick', async () => {

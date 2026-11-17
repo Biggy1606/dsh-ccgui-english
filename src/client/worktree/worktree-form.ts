@@ -32,11 +32,11 @@ const UNSAFE_SEGMENT = /[\\/:*?"<>|\s]+/g
 const EDGE_DASHES = /^-+|-+$/g
 const TITLE_SEPARATOR = ' / '
 
-const MISSING_BRANCH = '请填写分支名'
-const MISSING_BASE = '请选择基准分支'
-const MISSING_EXISTING = '请选择分支'
-const MISSING_PR = '请填写 PR 编号或链接'
-const MISSING_PATH = '请填写位置'
+const MISSING_BRANCH = 'Enter a branch name'
+const MISSING_BASE = 'Select a base branch'
+const MISSING_EXISTING = 'Select a branch'
+const MISSING_PR = 'Enter a PR number or link'
+const MISSING_PATH = 'Enter a location'
 
 /**
  * @param info - the repository.

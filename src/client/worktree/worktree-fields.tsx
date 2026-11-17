@@ -24,28 +24,28 @@ export interface FieldsProps {
 }
 
 const MODES: readonly { readonly id: WorktreeMode; readonly label: string }[] = [
-  { id: 'new', label: '新分支' },
-  { id: 'existing', label: '已有分支' },
-  { id: 'pr', label: '从 PR 创建' },
+  { id: 'new', label: 'New branch' },
+  { id: 'existing', label: 'Existing branch' },
+  { id: 'pr', label: 'From PR' },
 ]
 
-const BRANCH_LABEL = '分支名'
+const BRANCH_LABEL = 'Branch name'
 const BRANCH_PLACEHOLDER = 'feature/my-change'
-const BASE_LABEL = '基于（base）'
-const BASE_HINT = '下拉可搜索本地与远程分支；选远程分支时创建前先 fetch'
-const EXISTING_LABEL = '分支'
-const EXISTING_PLACEHOLDER = '搜索本地或远程分支'
-const EXISTING_HINT = '远程分支会在本地建一个同名分支并跟踪它'
+const BASE_LABEL = 'Base branch'
+const BASE_HINT = 'Search local and remote branches; remote branches are fetched before creation'
+const EXISTING_LABEL = 'Branch'
+const EXISTING_PLACEHOLDER = 'Search local or remote branches'
+const EXISTING_HINT = 'A local branch with the same name will track the remote branch'
 const PR_LABEL = 'PR'
-const PR_PLACEHOLDER = '#123 或 PR 链接'
-const PR_HINT = '从远程仓库拉取 PR 的最新提交（有 upstream 时优先用 upstream）'
-const PATH_LABEL = '位置'
-const PATH_HINT = '默认放在仓库同级的 <repo>-worktrees/ 目录下，可修改'
-const OPEN_SESSION = '创建后打开新会话（AI 立刻在该 worktree 里开工）'
+const PR_PLACEHOLDER = '#123 or PR link'
+const PR_HINT = 'Fetch the latest PR commit from the remote repository (preferring upstream when available)'
+const PATH_LABEL = 'Location'
+const PATH_HINT = 'Defaults to the <repo>-worktrees/ directory alongside the repository; editable'
+const OPEN_SESSION = 'Open a new session after creation (AI can start working in the worktree immediately)'
 
 function ModeTabs({ form, disabled, onChange }: Omit<FieldsProps, 'info'>) {
   return (
-    <div role="tablist" aria-label="Worktree 来源" className={WT.tabs}>
+    <div role="tablist" aria-label="Worktree source" className={WT.tabs}>
       {MODES.map((mode) => (
         <button
           key={mode.id}

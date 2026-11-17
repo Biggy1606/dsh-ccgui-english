@@ -76,9 +76,10 @@ export class ModeState {
    */
   choose(mode: string): void {
     const { list } = this
-    if (list === undefined) throw new LlmError('还没有读到这个 CLI 的模式列表，请稍后再试。', 'CLI_MODE_FAILED')
+    if (list === undefined)
+      throw new LlmError('The mode list for this CLI is not available yet. Please try again later.', 'CLI_MODE_FAILED')
     if (!list.options.some((option) => option.value === mode)) {
-      throw new LlmError(`这个 CLI 没有报告模式 ${mode}。`, 'CLI_MODE_FAILED')
+      throw new LlmError(`This CLI did not report mode ${mode}.`, 'CLI_MODE_FAILED')
     }
     this.wanted = mode
   }
@@ -101,7 +102,10 @@ export class ModeState {
     // A pick made before the CLI started was checked against the catalog, not this process.
     if (!list.options.some((option) => option.value === wanted)) {
       this.wanted = undefined
-      throw new LlmError(`${where.label} 无法切换到模式 ${wanted}：CLI 没有报告这个模式`, 'CLI_MODE_FAILED')
+      throw new LlmError(
+        `${where.label} could not switch to mode ${wanted}: CLI did not report this mode`,
+        'CLI_MODE_FAILED',
+      )
     }
     try {
       const options = await abortable(
@@ -110,15 +114,19 @@ export class ModeState {
       )
       this.report(options)
       const confirmed = readModeList(options)?.current
-      if (confirmed !== undefined && confirmed !== wanted) throw new Error(`CLI 仍在使用 ${confirmed}`)
+      if (confirmed !== undefined && confirmed !== wanted) throw new Error(`CLI is still using ${confirmed}`)
       this.wanted = undefined
       return this.list ?? list
     } catch (error: unknown) {
       if (signal?.aborted === true) throw error
       this.wanted = undefined
-      throw new LlmError(`${where.label} 无法切换到模式 ${wanted}：${errorMessage(error)}`, 'CLI_MODE_FAILED', {
-        cause: error,
-      })
+      throw new LlmError(
+        `${where.label} could not switch to mode ${wanted}: ${errorMessage(error)}`,
+        'CLI_MODE_FAILED',
+        {
+          cause: error,
+        },
+      )
     }
   }
 
@@ -140,7 +148,7 @@ export class ModeState {
       // The CLI may have answered the refusal with its options, so read where it is now.
       const now = this.list ?? list
       const current = now.options.find((option) => option.value === now.current)?.name ?? now.current
-      const notice = `（${errorMessage(error)}。这条消息按 CLI 当前的模式「${current}」发送，可以在 CLI 模式菜单里重新选择。）\n\n`
+      const notice = `(${errorMessage(error)}. This message was sent using the CLI’s current mode “${current}”; you can choose again in the CLI mode menu.)\n\n`
       return { mode: wanted, notice }
     }
   }

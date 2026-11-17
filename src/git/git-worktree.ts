@@ -91,7 +91,7 @@ export function parsePrInput(input: string): PrRef | undefined {
 }
 
 async function mainCheckout(spawn: Spawn, root: string): Promise<string> {
-  const result = await mustGit(spawn, root, ['worktree', 'list', '--porcelain'], '读取 worktree 列表失败')
+  const result = await mustGit(spawn, root, ['worktree', 'list', '--porcelain'], 'Failed to read worktree list')
   const first = result.stdout.split('\n').find((line) => line.startsWith('worktree '))
   // resolve: git prints C:/x on Windows, where the host's own paths read C:\x.
   return resolve(first === undefined ? root : first.slice('worktree '.length))
@@ -137,7 +137,7 @@ async function refExists(spawn: Spawn, root: string, ref: string): Promise<boole
 }
 
 async function remotes(spawn: Spawn, root: string): Promise<readonly string[]> {
-  const result = await mustGit(spawn, root, ['remote'], '读取远程仓库失败')
+  const result = await mustGit(spawn, root, ['remote'], 'Failed to read remotes')
   return result.stdout.split('\n').filter((line) => line !== '')
 }
 
@@ -156,26 +156,26 @@ async function fetchRemoteBranch(spawn: Spawn, root: string, name: string): Prom
   const target = await remoteBranch(spawn, root, name)
   if (target === undefined) return
   await mustGit(spawn, root, ['fetch', '--quiet', '--', target.remote, target.branch], {
-    failure: `拉取 ${name} 失败`,
+    failure: `Failed to fetch ${name}`,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
 }
 
 async function requireNewBranch(spawn: Spawn, root: string, branch: string): Promise<void> {
   await validBranch(spawn, root, branch)
-  if (await refExists(spawn, root, `refs/heads/${branch}`)) throw new GitError(`分支已存在：${branch}`)
+  if (await refExists(spawn, root, `refs/heads/${branch}`)) throw new GitError(`Branch already exists: ${branch}`)
 }
 
 async function worktreeAdd(spawn: Spawn, root: string, args: readonly string[]): Promise<void> {
   await mustGit(spawn, root, ['worktree', 'add', '--quiet', ...args], {
-    failure: '创建 worktree 失败',
+    failure: 'Failed to create worktree',
     signal: AbortSignal.timeout(ADD_TIMEOUT_MS),
   })
 }
 
 async function addNewBranch(spawn: Spawn, root: string, request: { branch: string; base: string; path: string }) {
   await requireNewBranch(spawn, root, request.branch)
-  const invalidBase = new GitError(`基准分支无效：${request.base}`)
+  const invalidBase = new GitError(`Invalid base branch: ${request.base}`)
   if (request.base.startsWith('-')) throw invalidBase
   await fetchRemoteBranch(spawn, root, request.base)
   const verified = await runGit(spawn, root, ['rev-parse', '--verify', '--quiet', `${request.base}^{commit}`])
@@ -193,9 +193,9 @@ async function addExistingBranch(spawn: Spawn, root: string, request: { branch: 
     return { path, branch }
   }
   const remote = await remoteBranch(spawn, root, branch)
-  if (remote === undefined) throw new GitError(`找不到分支：${branch}`)
+  if (remote === undefined) throw new GitError(`Branch not found: ${branch}`)
   await fetchRemoteBranch(spawn, root, branch)
-  if (!(await refExists(spawn, root, `refs/remotes/${branch}`))) throw new GitError(`找不到分支：${branch}`)
+  if (!(await refExists(spawn, root, `refs/remotes/${branch}`))) throw new GitError(`Branch not found: ${branch}`)
   if (await refExists(spawn, root, `refs/heads/${remote.branch}`)) {
     await worktreeAdd(spawn, root, ['--', path, remote.branch])
   } else {
@@ -213,7 +213,7 @@ const normalizeUrl = (url: string): string =>
 
 async function remoteFor(spawn: Spawn, root: string, repo: string | undefined): Promise<string> {
   const known = await remotes(spawn, root)
-  if (known.length === 0) throw new GitError('没有可以拉取 PR 的远程仓库')
+  if (known.length === 0) throw new GitError('No remote repository is available to fetch the PR')
   if (repo !== undefined) {
     const wanted = repo.toLowerCase()
     const urls = await Promise.all(
@@ -234,10 +234,10 @@ async function addPullRequest(spawn: Spawn, root: string, request: { pr: PrRef; 
   const remote = await remoteFor(spawn, root, pr.repo)
   // GitHub publishes every pull request's head under refs/pull/, so no API client is needed.
   await mustGit(spawn, root, ['fetch', '--quiet', '--', remote, `refs/pull/${String(pr.number)}/head`], {
-    failure: `拉取 PR #${String(pr.number)} 失败`,
+    failure: `Failed to fetch PR #${String(pr.number)}`,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
-  const head = await mustGit(spawn, root, ['rev-parse', '--verify', 'FETCH_HEAD^{commit}'], '读取 PR 提交失败')
+  const head = await mustGit(spawn, root, ['rev-parse', '--verify', 'FETCH_HEAD^{commit}'], 'Failed to read PR commit')
   await worktreeAdd(spawn, root, ['-b', branch, '--', path, head.stdout.trim()])
   return { path, branch }
 }

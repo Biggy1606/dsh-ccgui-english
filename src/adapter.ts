@@ -98,13 +98,19 @@ export class CliBridgeAdapter extends LlmAdapter {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- not in the current type, but other host versions may still send it
     if (purpose !== undefined) {
       if (String(purpose) !== AUTO_REVIEW_PURPOSE) {
-        throw new LlmError(`CLI 会话不支持辅助模型请求（${String(purpose)}）。`, 'UNSUPPORTED_OPTION')
+        throw new LlmError(
+          `CLI sessions do not support auxiliary model requests (${String(purpose)}).`,
+          'UNSUPPORTED_OPTION',
+        )
       }
       yield* this.deps.auxiliaryStream(options)
       return
     }
     if (sessionId === undefined) {
-      throw new LlmError('CLI 只能在会话里使用，不支持一次性模型请求。', 'UNSUPPORTED_OPTION')
+      throw new LlmError(
+        'CLIs can only be used in sessions; one-off model requests are not supported.',
+        'UNSUPPORTED_OPTION',
+      )
     }
     // Read first, so a CLI that cannot run under this PTC runtime is never started.
     const ptc = this.deps.ptcWrapFor(provider, sessionId)

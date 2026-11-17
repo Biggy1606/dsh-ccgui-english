@@ -46,7 +46,7 @@ describe('CliModelCatalog', () => {
     catalog.ensureListed('cli-x')
     await settled()
     expect(catalog.listModels('cli-x')).toEqual([
-      { provider: 'cli-x', id: 'default', name: 'Small（默认）' },
+      { provider: 'cli-x', id: 'default', name: 'Small (default)' },
       { provider: 'cli-x', id: 'large', name: 'Large' },
     ])
   })
@@ -66,7 +66,7 @@ describe('CliModelCatalog', () => {
     )
     catalog.ensureListed('cli-x')
     await settled()
-    expect(catalog.listModels('cli-x').map((model) => model.name)).toEqual(['Opus 5.5（默认）', 'Sonnet 5.5'])
+    expect(catalog.listModels('cli-x').map((model) => model.name)).toEqual(['Opus 5.5 (default)', 'Sonnet 5.5'])
     expect(catalog.modelName('cli-x', 'opus')).toBe('Opus 5.5')
   })
 
@@ -86,7 +86,7 @@ describe('CliModelCatalog', () => {
     )
     catalog.ensureListed('cli-x')
     await settled()
-    expect(catalog.listModels('cli-x').map((model) => model.name)).toEqual(['Opus 5.5（默认）', 'Sonnet 5.5'])
+    expect(catalog.listModels('cli-x').map((model) => model.name)).toEqual(['Opus 5.5 (default)', 'Sonnet 5.5'])
     // A session already on one, resumed say, still shows its name.
     expect(catalog.modelName('cli-x', 'claude-opus-5')).toBe('Opus 5')
   })
@@ -107,13 +107,13 @@ describe('CliModelCatalog', () => {
     catalog.ensureListed('cli-x')
     await settled()
     expect(catalog.listModels('cli-x')).toEqual([
-      { provider: 'cli-x', id: 'default', name: 'Hy4（默认）' },
+      { provider: 'cli-x', id: 'default', name: 'Hy4 (default)' },
       { provider: 'cli-x', id: 'hy4free', name: 'Hy4', description: 'x0.00 credits' },
       { provider: 'cli-x', id: 'hy4std', name: 'Hy4', description: 'x0.29 credits' },
       { provider: 'cli-x', id: 'glm', name: 'GLM', description: 'x0.69 credits' },
     ])
     expect(catalog.modelName('cli-x', 'glm')).toBe('GLM')
-    expect(catalog.modelName('cli-x', 'default')).toBe('Hy4（默认）')
+    expect(catalog.modelName('cli-x', 'default')).toBe('Hy4 (default)')
   })
 
   // Only distinct descriptions make a tier. Without them the row is still the alias
@@ -207,7 +207,7 @@ describe('CliModelCatalog', () => {
     const { catalog } = setup(() => Promise.resolve({ ...LIST, current: 'hidden' }))
     catalog.ensureListed('cli-x')
     await settled()
-    expect(catalog.listModels('cli-x')[0]?.name).toBe('hidden（默认）')
+    expect(catalog.listModels('cli-x')[0]?.name).toBe('hidden (default)')
   })
 
   it('stays usable when a CLI cannot be asked', async () => {
@@ -238,7 +238,7 @@ describe('CliModelCatalog', () => {
     expect(catalog.modelName('cli-x', 'large')).toBe('large')
     catalog.ensureListed('cli-x')
     await settled()
-    expect(catalog.modelName('cli-x', 'default')).toBe('Small（默认）')
+    expect(catalog.modelName('cli-x', 'default')).toBe('Small (default)')
     expect(catalog.modelName('cli-x', 'large')).toBe('Large')
     expect(catalog.modelName('cli-x', 'gone')).toBe('gone')
   })
@@ -250,7 +250,7 @@ describe('CliModelCatalog', () => {
     it('shows them at once and tells the UI', () => {
       const { catalog, deps } = setup()
       catalog.restore(new Map([['cli-x', OLD]]))
-      expect(catalog.listModels('cli-x').map((model) => model.name)).toEqual(['Old（默认）'])
+      expect(catalog.listModels('cli-x').map((model) => model.name)).toEqual(['Old (default)'])
       expect(catalog.known('cli-x')).toEqual(OLD)
       expect(deps.onUpdated).toHaveBeenCalledWith('cli-x')
     })

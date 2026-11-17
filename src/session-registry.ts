@@ -203,7 +203,7 @@ export class CliSessionRegistry {
    * @throws when the route is not a configured CLI, or the CLI refuses the change.
    */
   async switchMode(sessionId: string, provider: string, mode: string): Promise<CliModeList | undefined> {
-    if (!this.agentsByProvider.has(provider)) throw new LlmError(`未知的 CLI 路由：${provider}`, 'CLI_MODE_FAILED')
+    if (!this.agentsByProvider.has(provider)) throw new LlmError(`Unknown CLI route: ${provider}`, 'CLI_MODE_FAILED')
     this.pickedModes = new Map([...this.pickedModes, [sessionId, { provider, mode }]])
     const live = this.sessions.get(sessionId)
     if (live?.provider !== provider) return undefined
@@ -230,7 +230,10 @@ export class CliSessionRegistry {
     const wrap = this.deps.ptcWrap()
     if (wrap !== undefined) return wrap
     const name = this.labelFor(provider) ?? provider
-    throw new LlmError(`${name} 不支持当前的 PTC 运行时，请切回标准模式。`, 'CLI_WRONG_PRESET')
+    throw new LlmError(
+      `${name} does not support the current PTC runtime; switch back to standard mode.`,
+      'CLI_WRONG_PRESET',
+    )
   }
 
   /**
@@ -241,14 +244,15 @@ export class CliSessionRegistry {
    */
   resolveSession(provider: string, sessionId: string): CliSession {
     const config = this.agentsByProvider.get(provider)
-    if (config === undefined) throw new LlmError(`未知的 CLI 路由：${provider}`, 'CLI_START_FAILED')
+    if (config === undefined) throw new LlmError(`Unknown CLI route: ${provider}`, 'CLI_START_FAILED')
     const agent = this.deps.getAgent(sessionId)
-    if (agent === undefined) throw new LlmError(`找不到会话 ${sessionId}。`, 'CLI_START_FAILED')
+    if (agent === undefined) throw new LlmError(`Session ${sessionId} not found.`, 'CLI_START_FAILED')
     const current = this.sessions.get(sessionId)
     if (current?.provider === provider && !current.session.replaceable) return current.session
     this.stopSession(sessionId)
     const { cwd } = agent.session.header
-    if (cwd === undefined) throw new LlmError(`${config.name} 需要工作目录，但这个会话没有。`, 'CLI_START_FAILED')
+    if (cwd === undefined)
+      throw new LlmError(`${config.name} requires a working directory, but this session has none.`, 'CLI_START_FAILED')
     const session = this.deps.createSession(config, sessionId, cwd, {
       sentMessageIds: current?.session.sentMessageIds ?? NO_MESSAGES,
       after: this.stopping.get(sessionId) ?? Promise.resolve(),
@@ -269,7 +273,7 @@ export class CliSessionRegistry {
     const { agent, callId, signal } = exec
     const session = agent === undefined ? undefined : this.sessions.get(agent.id)?.session
     if (agent === undefined || session === undefined) {
-      throw new Error(`${CLI_TOOL_NAME} 只记录 CLI 发出的调用，不能直接使用。`)
+      throw new Error(`${CLI_TOOL_NAME} only records calls made by a CLI and cannot be used directly.`)
     }
     return session.waitForTool(callId, (request, askSignal) => this.deps.ask(agent, request, askSignal), signal)
   }

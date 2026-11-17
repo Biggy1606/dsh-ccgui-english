@@ -14,7 +14,7 @@ import { isRow, rowCount } from './menu-models.ts'
 import type { MenuModels, MenuRow, MenuSection } from './menu-models.ts'
 import { SEARCH_ABOVE } from './model-card.tsx'
 
-const UNKNOWN_ERROR_LABEL = '未知错误'
+const UNKNOWN_ERROR_LABEL = 'Unknown error'
 
 /** Asks the host to move the session to another model. */
 export type SelectModel = (selection: DirectorySelection) => Promise<{ error?: { message?: string } }>

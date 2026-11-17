@@ -14,19 +14,20 @@ import type { LatestRelease } from './update-check.ts'
 /** Replaced with package.json's version by scripts/build-client.mjs; undefined when run from source. */
 declare const __DSH_CCGUI_VERSION__: string | undefined
 
-export const PLUGIN_VERSION: string = typeof __DSH_CCGUI_VERSION__ === 'string' ? __DSH_CCGUI_VERSION__ : '开发版'
+export const PLUGIN_VERSION: string = typeof __DSH_CCGUI_VERSION__ === 'string' ? __DSH_CCGUI_VERSION__ : 'Development'
 
 // This plugin's own repository, matching package.json's `repository` (a test keeps them in step).
 const REPO_URL = 'https://github.com/zhukunpenglinyutong/dsh-ccgui'
-const VERSION_LABEL = '版本'
+const VERSION_LABEL = 'Version'
 // A release reads as v0.3.0, like the harness's own 新版本 chip; the source run keeps its word.
 const VERSION_VALUE = /^\d/.test(PLUGIN_VERSION) ? `v${PLUGIN_VERSION}` : PLUGIN_VERSION
 const UPDATE_ARROW = '↑'
-const updateLabel = (version: string): string => `有新版本 v${version}，查看更新说明`
-const WECHAT_LABEL = '微信交流群'
-const WECHAT_DESC = '扫描作者个人公众号二维码，获取微信交流群二维码，加群获得最新资讯和技术支持'
-const WECHAT_TIP = '使用微信扫一扫'
-const WECHAT_QR_ALT = '官方微信交流群二维码'
+const updateLabel = (version: string): string => `Version v${version} is available; view release notes`
+const WECHAT_LABEL = 'WeChat community group'
+const WECHAT_DESC =
+  'Scan the author’s public account QR code to get the WeChat group QR code and join for updates and support'
+const WECHAT_TIP = 'Scan with WeChat'
+const WECHAT_QR_ALT = 'Official WeChat community group QR code'
 const QR_SIZE = 160
 const ABOUT_CLASS = 'dsh-ccgui-about'
 

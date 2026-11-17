@@ -39,7 +39,7 @@ afterEach(() => {
 describe('CliPrefsSection', () => {
   it('explains where the list comes from before any provider is known', () => {
     render(<CliPrefsSection prefs={createCliPrefs(memoryStorage())} />)
-    expect(screen.getByText('打开任一会话后，这里会列出可切换的 CLI。')).toBeDefined()
+    expect(screen.getByText('Open a session to see the available CLIs here.')).toBeDefined()
     expect(screen.queryByRole('list')).toBeNull()
   })
 
@@ -48,25 +48,27 @@ describe('CliPrefsSection', () => {
     expect(rowNames()).toEqual(['DeepSeek', 'Claude Code', 'Codex CLI'])
     const [first, , last] = screen.getAllByRole('listitem')
     expect(first?.querySelector('svg')).not.toBeNull()
-    expect(within(first ?? document.body).getByRole('button', { name: '上移 DeepSeek' })).toHaveProperty(
+    expect(within(first ?? document.body).getByRole('button', { name: 'Move DeepSeek up' })).toHaveProperty(
       'disabled',
       true,
     )
-    expect(within(last ?? document.body).getByRole('button', { name: '下移 Codex CLI' })).toHaveProperty(
+    expect(within(last ?? document.body).getByRole('button', { name: 'Move Codex CLI down' })).toHaveProperty(
       'disabled',
       true,
     )
     expect(CLI_PREFS_STYLES).toContain('.dsh-ccgui-cli-prefs')
-    expect(screen.getByText('输入框 CLI 切换菜单里的顺序和显示的项。关闭的 CLI 不再出现在菜单中。')).toBeDefined()
-    expect(screen.getByText('更多 CLI 适配中…')).toBeDefined()
+    expect(
+      screen.getByText('Choose the order and visibility of CLIs in the composer menu. Disabled CLIs are hidden.'),
+    ).toBeDefined()
+    expect(screen.getByText('More CLIs coming soon…')).toBeDefined()
   })
 
   it('reorders providers with the arrow buttons', async () => {
     const prefs = seeded()
     render(<CliPrefsSection prefs={prefs} />)
-    await userEvent.click(screen.getByRole('button', { name: '上移 Codex CLI' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Move Codex CLI up' }))
     expect(rowNames()).toEqual(['DeepSeek', 'Codex CLI', 'Claude Code'])
-    await userEvent.click(screen.getByRole('button', { name: '下移 DeepSeek' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Move DeepSeek down' }))
     expect(rowNames()).toEqual(['Codex CLI', 'DeepSeek', 'Claude Code'])
     expect(prefs.getSnapshot().order).toEqual(['cli-codex', 'deepseek-official', 'cli-claude'])
   })
@@ -86,23 +88,23 @@ describe('CliPrefsSection', () => {
 
   it('shows the built-in provider without a switch', () => {
     render(<CliPrefsSection prefs={seeded()} />)
-    expect(screen.queryByRole('switch', { name: '启用 DeepSeek' })).toBeNull()
-    expect(screen.getByText('内置提供方，始终显示')).toBeDefined()
-    expect(screen.getByRole('switch', { name: '启用 Claude Code' })).toBeDefined()
+    expect(screen.queryByRole('switch', { name: 'Enable DeepSeek' })).toBeNull()
+    expect(screen.getByText('Built-in provider; always visible')).toBeDefined()
+    expect(screen.getByRole('switch', { name: 'Enable Claude Code' })).toBeDefined()
   })
 
   it('turns a CLI off with visible feedback and back on', async () => {
     const prefs = seeded()
     render(<CliPrefsSection prefs={prefs} />)
-    const claude = screen.getByRole('switch', { name: '启用 Claude Code' })
-    expect(claude.getAttribute('title')).toBe('关闭后不再出现在 CLI 菜单')
+    const claude = screen.getByRole('switch', { name: 'Enable Claude Code' })
+    expect(claude.getAttribute('title')).toBe('Disable to hide from the CLI menu')
     await userEvent.click(claude)
     expect(prefs.getSnapshot().hidden).toEqual(['cli-claude'])
     expect(claude.getAttribute('aria-checked')).toBe('false')
-    expect(claude.getAttribute('title')).toBe('开启后重新出现在 CLI 菜单')
-    expect(screen.getByText('已关闭，不在 CLI 菜单中显示')).toBeDefined()
+    expect(claude.getAttribute('title')).toBe('Enable to show in the CLI menu')
+    expect(screen.getByText('Disabled; hidden from the CLI menu')).toBeDefined()
     // Any CLI can be turned off at once; DeepSeek keeps the switcher from being empty.
-    await userEvent.click(screen.getByRole('switch', { name: '启用 Codex CLI' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Enable Codex CLI' }))
     expect(prefs.getSnapshot().hidden).toEqual(['cli-claude', 'cli-codex'])
     await userEvent.click(claude)
     expect(prefs.getSnapshot().hidden).toEqual(['cli-codex'])

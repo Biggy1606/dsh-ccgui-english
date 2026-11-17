@@ -111,7 +111,7 @@ describe('CliBridge auto-review routing', () => {
     const options = request({ purpose: 'auto-review' })
     await expect(collect(onlyAdapter(h).stream(options))).rejects.toMatchObject({
       code: 'UNSUPPORTED_OPTION',
-      message: /审查模型/,
+      message: /review model/,
     })
     expect(warnings(h).some((text) => text.includes('could not list models for configured'))).toBe(true)
     expect(h.subprocess.spawned).toEqual([])

@@ -13,7 +13,7 @@ export type Fetch = (input: string, init: RequestInit) => Promise<Response>
 /** Posts one operation; rejects with a message ready to show. */
 export type GitPost = <T>(operation: string, body?: object) => Promise<T>
 
-const NETWORK_FAILED = '无法连接到 DSH 服务'
+const NETWORK_FAILED = 'Unable to connect to the DSH service'
 
 interface Answer {
   readonly success?: unknown
@@ -52,7 +52,7 @@ export function gitPost(fetchFn: Fetch, cwd: string): GitPost {
     }
     const answer = await answerOf(response)
     if (!response.ok || answer.success !== true) {
-      throw new Error(typeof answer.error === 'string' ? answer.error : `请求失败（${String(response.status)}）`)
+      throw new Error(typeof answer.error === 'string' ? answer.error : `Request failed (${String(response.status)})`)
     }
     return answer.data as T
   }

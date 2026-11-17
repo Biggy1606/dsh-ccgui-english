@@ -10,7 +10,7 @@ import type { Spawn } from './git-run.ts'
 
 /** Network commands wait on a remote; everything else is local and quick. */
 const NETWORK_TIMEOUT_MS = 120_000
-const NO_ORIGIN = '没有名为 origin 的远程仓库'
+const NO_ORIGIN = 'No remote named origin'
 
 async function hasHead(spawn: Spawn, root: string): Promise<boolean> {
   const result = await runGit(spawn, root, ['rev-parse', '--verify', '--quiet', 'HEAD'])
@@ -25,7 +25,7 @@ async function hasHead(spawn: Spawn, root: string): Promise<boolean> {
  */
 export async function stage(spawn: Spawn, root: string, paths: readonly string[]): Promise<void> {
   if (paths.length === 0) return
-  await mustGit(spawn, root, ['add', '-A', '--', ...paths], '暂存失败')
+  await mustGit(spawn, root, ['add', '-A', '--', ...paths], 'Failed to stage')
 }
 
 /**
@@ -40,7 +40,7 @@ export async function unstage(spawn: Spawn, root: string, paths: readonly string
   const args = (await hasHead(spawn, root))
     ? ['reset', '-q', 'HEAD', '--', ...paths]
     : ['rm', '--cached', '-r', '-q', '--', ...paths]
-  await mustGit(spawn, root, args, '取消暂存失败')
+  await mustGit(spawn, root, args, 'Failed to unstage')
 }
 
 /**
@@ -56,10 +56,10 @@ export async function discard(
   target: { readonly tracked: readonly string[]; readonly untracked: readonly string[] },
 ): Promise<void> {
   if (target.tracked.length > 0) {
-    await mustGit(spawn, root, ['checkout', '-q', '--', ...target.tracked], '撤销更改失败')
+    await mustGit(spawn, root, ['checkout', '-q', '--', ...target.tracked], 'Failed to discard changes')
   }
   if (target.untracked.length > 0) {
-    await mustGit(spawn, root, ['clean', '-f', '-q', '--', ...target.untracked], '删除未跟踪文件失败')
+    await mustGit(spawn, root, ['clean', '-f', '-q', '--', ...target.untracked], 'Failed to delete untracked files')
   }
 }
 
@@ -76,12 +76,12 @@ export async function commit(
   root: string,
   change: { readonly message: string; readonly paths: readonly string[] },
 ): Promise<void> {
-  if (change.message.trim() === '') throw new GitError('请填写提交信息')
-  if (change.paths.length === 0) throw new GitError('请选择要提交的文件')
+  if (change.message.trim() === '') throw new GitError('Enter a commit message')
+  if (change.paths.length === 0) throw new GitError('Select files to commit')
   // `commit -- <paths>` only takes files git already knows, so new files are added first.
   await stage(spawn, root, change.paths)
   await mustGit(spawn, root, ['commit', '-q', '-F', '-', '--', ...change.paths], {
-    failure: '提交失败',
+    failure: 'Commit failed',
     input: change.message,
   })
 }
@@ -100,11 +100,11 @@ export async function push(spawn: Spawn, root: string): Promise<void> {
   const signal = AbortSignal.timeout(NETWORK_TIMEOUT_MS)
   const upstream = await runGit(spawn, root, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'])
   if (upstream.exitCode === 0) {
-    await mustGit(spawn, root, ['push'], { failure: '推送失败', signal })
+    await mustGit(spawn, root, ['push'], { failure: 'Push failed', signal })
     return
   }
-  if (!(await hasOrigin(spawn, root))) throw new GitError(`推送失败：${NO_ORIGIN}`)
-  await mustGit(spawn, root, ['push', '-u', 'origin', 'HEAD'], { failure: '推送失败', signal })
+  if (!(await hasOrigin(spawn, root))) throw new GitError(`Push failed: ${NO_ORIGIN}`)
+  await mustGit(spawn, root, ['push', '-u', 'origin', 'HEAD'], { failure: 'Push failed', signal })
 }
 
 /**
@@ -115,7 +115,7 @@ export async function push(spawn: Spawn, root: string): Promise<void> {
  */
 export async function pull(spawn: Spawn, root: string): Promise<void> {
   const signal = AbortSignal.timeout(NETWORK_TIMEOUT_MS)
-  await mustGit(spawn, root, ['pull', '--ff-only'], { failure: '拉取失败', signal })
+  await mustGit(spawn, root, ['pull', '--ff-only'], { failure: 'Pull failed', signal })
 }
 
 /**
@@ -127,7 +127,7 @@ export async function pull(spawn: Spawn, root: string): Promise<void> {
  */
 export async function validBranch(spawn: Spawn, root: string, name: string): Promise<void> {
   const result = await runGit(spawn, root, ['check-ref-format', '--branch', name])
-  if (name.startsWith('-') || result.exitCode !== 0) throw new GitError(`分支名称无效：${name}`)
+  if (name.startsWith('-') || result.exitCode !== 0) throw new GitError(`Invalid branch name: ${name}`)
 }
 
 /**
@@ -146,7 +146,7 @@ export async function checkout(
   const local = branch.remote ? branch.name.slice(branch.name.indexOf('/') + 1) : branch.name
   const exists = await runGit(spawn, root, ['show-ref', '--verify', '--quiet', `refs/heads/${local}`])
   const args = branch.remote && exists.exitCode !== 0 ? ['switch', '--track', branch.name] : ['switch', local]
-  await mustGit(spawn, root, args, '切换分支失败')
+  await mustGit(spawn, root, args, 'Failed to switch branches')
 }
 
 /**
@@ -157,5 +157,5 @@ export async function checkout(
  */
 export async function createBranch(spawn: Spawn, root: string, name: string): Promise<void> {
   await validBranch(spawn, root, name)
-  await mustGit(spawn, root, ['switch', '-c', name], '新建分支失败')
+  await mustGit(spawn, root, ['switch', '-c', name], 'Failed to create branch')
 }

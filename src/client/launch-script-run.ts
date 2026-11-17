@@ -52,9 +52,9 @@ const TERMINAL_KIND = 'terminal'
 /** A shell normally attaches well within a second; a cold remote host can take a while. */
 const ATTACH_TIMEOUT_MS = 15_000
 const DEAD_PHASES: ReadonlySet<string> = new Set(['failed', 'closed', 'closing'])
-const OPEN_FAILED = '没能打开终端标签'
-const ATTACH_FAILED = '终端没有准备好，命令没有发送'
-const ATTACH_TIMED_OUT = '等待终端超时，命令没有发送'
+const OPEN_FAILED = 'Could not open a terminal tab'
+const ATTACH_FAILED = 'Terminal was not ready; the command was not sent'
+const ATTACH_TIMED_OUT = 'Timed out waiting for the terminal; the command was not sent'
 
 /**
  * Wait until a terminal accepts input.

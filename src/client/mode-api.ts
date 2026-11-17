@@ -38,8 +38,8 @@ export interface ModeApi {
   write(provider: string, mode: string): Promise<ModeReply>
 }
 
-const UNKNOWN_ERROR = '切换 CLI 模式失败'
-const BAD_REPLY = '模式接口返回了无法识别的结果'
+const UNKNOWN_ERROR = 'Failed to change CLI mode'
+const BAD_REPLY = 'The mode API returned an unrecognized response'
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 const isText = (value: unknown): value is string => typeof value === 'string' && value.length > 0
@@ -77,7 +77,7 @@ export function createModeApi(post: PostJson, sessionId: string): ModeApi {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ sessionId, provider, ...(mode === undefined ? {} : { mode }) }),
     })
-    if (!response.ok) throw new Error(`${UNKNOWN_ERROR}（HTTP ${response.status}）`)
+    if (!response.ok) throw new Error(`${UNKNOWN_ERROR} (HTTP ${response.status})`)
     return replyOf(await response.json())
   }
   return { read: (provider) => send(provider), write: (provider, mode) => send(provider, mode) }

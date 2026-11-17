@@ -161,7 +161,7 @@ describe('probeModels', () => {
   it('gives up on a CLI that never answers', async () => {
     const fake = new FakeTransport()
     fake.initialize = () => new Promise(() => {})
-    await expect(probeModels((handlers) => fake.attach(handlers), '/tmp/x', 10)).rejects.toThrow('超时')
+    await expect(probeModels((handlers) => fake.attach(handlers), '/tmp/x', 10)).rejects.toThrow('Timed out')
     expect(fake.disposedForcefully).toBe(true)
   })
 

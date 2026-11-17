@@ -120,7 +120,7 @@ describe('diffRows', () => {
 
   it('says a binary file cannot be shown, and ends a hunk at the next file header', () => {
     expect(diffRows('diff --git a/i.png b/i.png\nBinary files a/i.png and b/i.png differ\n').rows).toEqual([
-      { kind: 'note', text: '二进制文件，无法显示差异' },
+      { kind: 'note', text: 'Binary file; diff cannot be displayed' },
     ])
     const two = diffRows('@@ -1 +1 @@\n-a\n+b\ndiff --git a/x b/x\n--- a/x\n')
     expect(two.rows.map((row) => row.kind)).toEqual(['hunk', 'del', 'add'])

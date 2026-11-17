@@ -197,7 +197,7 @@ describe('CliSession that never finishes starting', () => {
   it('says how long it waited', async () => {
     const { fake, session } = setupWith({ startTimeoutMs: 1_000 })
     fake.initialize = () => new Promise(() => {})
-    await expect(collect(session.stream({ messages: [user('1', 'hi')] }))).rejects.toThrow('1 秒')
+    await expect(collect(session.stream({ messages: [user('1', 'hi')] }))).rejects.toThrow('1 seconds')
   })
 })
 
@@ -220,7 +220,7 @@ describe('CliSession stopped while starting', () => {
     const turn = collect(session.stream({ messages: [user('1', 'go')] }))
     await session.dispose()
     stopped.open()
-    await expect(turn).rejects.toThrow('已关闭')
+    await expect(turn).rejects.toThrow('session closed')
     expect(opened).not.toHaveBeenCalled()
   })
 
@@ -229,7 +229,7 @@ describe('CliSession stopped while starting', () => {
     const { session } = setup()
     const turn = collect(session.stream({ messages: [user('1', 'go')] }))
     await session.dispose(false, '插件已重新加载')
-    await expect(turn).rejects.toMatchObject({ message: 'OpenCode 已停止：插件已重新加载' })
+    await expect(turn).rejects.toMatchObject({ message: 'OpenCode stopped: 插件已重新加载' })
   })
 
   it('keeps the install hint when the process dies during startup', async () => {
@@ -238,7 +238,7 @@ describe('CliSession stopped while starting', () => {
       fake.close(new Error('spawn opencode ENOENT'))
       return Promise.reject(new Error('spawn opencode ENOENT'))
     }
-    await expect(collect(session.stream({ messages: [user('1', 'x')] }))).rejects.toThrow('请确认它已安装')
+    await expect(collect(session.stream({ messages: [user('1', 'x')] }))).rejects.toThrow('Make sure it is installed')
   })
 
   // Reinstalling does not fix a broken npx cache, so the install hint would send the user the wrong way.
@@ -255,9 +255,9 @@ describe('CliSession stopped while starting', () => {
     const failure = collect(session.stream({ messages: [user('1', 'x')] }))
     await expect(failure).rejects.toMatchObject({
       code: 'CLI_START_FAILED',
-      message: expect.stringContaining('请删除 /Users/u/.npm/_npx/c51fd8e4 后重试') as unknown,
+      message: expect.stringContaining('Delete /Users/u/.npm/_npx/c51fd8e4 and retry') as unknown,
     })
-    await expect(failure).rejects.not.toThrow('请确认它已安装')
+    await expect(failure).rejects.not.toThrow('Make sure it is installed')
   })
 
   it('does not send to a CLI that exits right after starting', async () => {

@@ -16,13 +16,13 @@ import type { CliEntry, CliPrefs } from './cli-prefs.ts'
 import { ProviderMark } from './marks.tsx'
 import { useStore } from './store.ts'
 
-const SECTION_INTRO = '输入框 CLI 切换菜单里的顺序和显示的项。关闭的 CLI 不再出现在菜单中。'
-const EMPTY_HINT = '打开任一会话后，这里会列出可切换的 CLI。'
-const OFF_HINT = '已关闭，不在 CLI 菜单中显示'
-const LOCKED_HINT = '内置提供方，始终显示'
-const SWITCH_ON_TITLE = '关闭后不再出现在 CLI 菜单'
-const SWITCH_OFF_TITLE = '开启后重新出现在 CLI 菜单'
-const MORE_CLIS_HINT = '更多 CLI 适配中…'
+const SECTION_INTRO = 'Choose the order and visibility of CLIs in the composer menu. Disabled CLIs are hidden.'
+const EMPTY_HINT = 'Open a session to see the available CLIs here.'
+const OFF_HINT = 'Disabled; hidden from the CLI menu'
+const LOCKED_HINT = 'Built-in provider; always visible'
+const SWITCH_ON_TITLE = 'Disable to hide from the CLI menu'
+const SWITCH_OFF_TITLE = 'Enable to show in the CLI menu'
+const MORE_CLIS_HINT = 'More CLIs coming soon…'
 const MARK_SIZE = 16
 const ARROW_SIZE = 14
 const SECTION_CLASS = 'dsh-ccgui-cli-prefs'
@@ -54,7 +54,7 @@ function MoveButtons({
     <span className={`${SECTION_CLASS}-moves`}>
       <Button
         size="sm"
-        aria-label={`上移 ${entry.label}`}
+        aria-label={`Move ${entry.label} up`}
         disabled={first}
         icon={<IconChevronUpOutlineRegular size={ARROW_SIZE} />}
         onClick={() => {
@@ -63,7 +63,7 @@ function MoveButtons({
       />
       <Button
         size="sm"
-        aria-label={`下移 ${entry.label}`}
+        aria-label={`Move ${entry.label} down`}
         disabled={last}
         icon={<IconChevronDownOutlineRegular size={ARROW_SIZE} />}
         onClick={() => {
@@ -103,7 +103,7 @@ function CliRow({
       ) : (
         <Switch
           checked={entry.enabled}
-          label={`启用 ${entry.label}`}
+          label={`Enable ${entry.label}`}
           title={entry.enabled ? SWITCH_ON_TITLE : SWITCH_OFF_TITLE}
           onChange={(next) => {
             prefs.setEnabled(entry.id, next)

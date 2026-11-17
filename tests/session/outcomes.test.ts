@@ -28,20 +28,20 @@ describe('turnEndStep', () => {
   it.each([
     ['end_turn', { kind: 'stop' }],
     ['max_tokens', { kind: 'max-tokens' }],
-    ['cancelled', { kind: 'aborted', failure: { message: 'X CLI 已取消本轮。', code: 'ABORTED' } }],
+    ['cancelled', { kind: 'aborted', failure: { message: 'X CLI cancelled this turn.', code: 'ABORTED' } }],
     [
       'refusal',
       {
         kind: 'error',
         failure: {
-          message: 'X CLI 拒绝继续这个请求，但未说明原因（可查看 CLI 日志了解详情）。',
+          message: 'X CLI refused to continue this request without giving a reason (check the CLI logs for details).',
           code: 'CLI_REFUSAL',
         },
       },
     ],
     [
       'max_turn_requests',
-      { kind: 'error', failure: { message: 'X CLI 达到了单轮请求次数上限。', code: 'CLI_TURN_LIMIT' } },
+      { kind: 'error', failure: { message: 'X CLI reached the request limit for this turn.', code: 'CLI_TURN_LIMIT' } },
     ],
   ] as const)('finishes a %s turn as %o, carrying the replay state', (stopReason, reason) => {
     expect(finishOf(stopReason)).toEqual({ type: 'finish', reason, ...REPLAY })
@@ -50,7 +50,10 @@ describe('turnEndStep', () => {
   it('reports a stop reason it does not know, by name', () => {
     expect(finishOf('something_new' as StopReason)).toEqual({
       type: 'finish',
-      reason: { kind: 'error', failure: { message: 'X CLI 以未知原因结束：something_new', code: 'CLI_UNKNOWN_STOP' } },
+      reason: {
+        kind: 'error',
+        failure: { message: 'X CLI stopped for an unknown reason: something_new', code: 'CLI_UNKNOWN_STOP' },
+      },
       ...REPLAY,
     })
   })
@@ -73,7 +76,7 @@ describe('refusal details', () => {
         kind: 'error',
         failure: {
           code: 'CLI_REFUSAL',
-          message: 'X CLI 拒绝继续这个请求：Hy4 限时免费模型的额度已用尽，请切换模型。',
+          message: 'X CLI refused to continue this request: Hy4 限时免费模型的额度已用尽，请切换模型。',
         },
       },
     })
@@ -81,7 +84,7 @@ describe('refusal details', () => {
 
   it('collapses whitespace in the reason', () => {
     expect(finishOf('refusal', '  模型\n不可用  ')).toMatchObject({
-      reason: { failure: { message: 'X CLI 拒绝继续这个请求：模型 不可用' } },
+      reason: { failure: { message: 'X CLI refused to continue this request: 模型 不可用' } },
     })
   })
 
@@ -92,7 +95,7 @@ describe('refusal details', () => {
       }
     ).reason.failure.message
     expect(message).toContain('QUOTA_EXCEEDED')
-    expect(message.startsWith('X CLI 拒绝继续这个请求：…')).toBe(true)
+    expect(message.startsWith('X CLI refused to continue this request: …')).toBe(true)
     expect(message.length).toBeLessThan(450)
   })
 
@@ -104,7 +107,7 @@ describe('refusal details', () => {
         kind: 'error',
         failure: {
           code: 'CLI_REFUSAL',
-          message: 'X CLI 拒绝继续这个请求：Hy4 限时免费模型今日额度已用尽',
+          message: 'X CLI refused to continue this request: Hy4 限时免费模型今日额度已用尽',
         },
       },
     })
@@ -112,7 +115,11 @@ describe('refusal details', () => {
 
   it('still says nothing was given when neither the answer nor the log has a reason', () => {
     expect(finishOf('refusal', '', '   ')).toMatchObject({
-      reason: { failure: { message: 'X CLI 拒绝继续这个请求，但未说明原因（可查看 CLI 日志了解详情）。' } },
+      reason: {
+        failure: {
+          message: 'X CLI refused to continue this request without giving a reason (check the CLI logs for details).',
+        },
+      },
     })
   })
 
@@ -260,7 +267,7 @@ describe('turnFailure', () => {
     const cause = new Error('pipe closed')
     const wrapped = turnFailure(cause, LABEL)
     expect(wrapped).toBeInstanceOf(LlmError)
-    expect(wrapped.message).toBe('X CLI 执行失败：pipe closed')
+    expect(wrapped.message).toBe('X CLI failed: pipe closed')
     expect(wrapped.code).toBe('CLI_PROMPT_FAILED')
     expect(wrapped.cause).toBe(cause)
   })

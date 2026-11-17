@@ -13,6 +13,6 @@ describe('ChangesTitle', () => {
   it('draws a glyph before the name, so a compact chip has something to show', () => {
     const { container } = render(<ChangesTitle />)
     expect(container.firstElementChild?.tagName.toLowerCase()).toBe('svg')
-    expect(container.textContent).toBe('变更')
+    expect(container.textContent).toBe('Changes')
   })
 })

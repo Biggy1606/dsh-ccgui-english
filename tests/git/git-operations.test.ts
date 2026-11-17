@@ -112,14 +112,14 @@ describe('writes', () => {
   })
 
   it('refuses a commit without a message or files', async () => {
-    await expect(run('commit', { message: '   ', paths: ['a.txt'] })).rejects.toThrow('请填写提交信息')
-    await expect(run('commit', { message: 'x', paths: [] })).rejects.toThrow('请选择要提交的文件')
+    await expect(run('commit', { message: '   ', paths: ['a.txt'] })).rejects.toThrow('Enter a commit message')
+    await expect(run('commit', { message: 'x', paths: [] })).rejects.toThrow('Select files to commit')
   })
 
   it('reports git refusals as GitError with git’s reason', async () => {
     const error: unknown = await run('stage', { paths: ['missing.txt'] }).catch((caught: unknown) => caught)
     expect(error).toBeInstanceOf(GitError)
-    expect(String(error)).toContain('暂存失败：')
+    expect(String(error)).toContain('Failed to stage:')
     expect(statusFor(error)).toBe(409)
   })
 })
@@ -129,8 +129,8 @@ describe('branches', () => {
     await status('create-branch', { branch: 'feature/x' })
     expect(await run('branches')).toEqual({ current: 'feature/x', local: ['feature/x', 'main'], remote: [] })
     expect((await status('checkout', { branch: 'main' })).branch).toBe('main')
-    await expect(run('create-branch', { branch: '-bad' })).rejects.toThrow('分支名称无效')
-    await expect(run('create-branch', { branch: 'a..b' })).rejects.toThrow('分支名称无效')
+    await expect(run('create-branch', { branch: '-bad' })).rejects.toThrow('Invalid branch name')
+    await expect(run('create-branch', { branch: 'a..b' })).rejects.toThrow('Invalid branch name')
   })
 })
 
@@ -173,7 +173,7 @@ describe('remote', () => {
 
   it('refuses to push without an origin', async () => {
     git(repo, 'remote', 'remove', 'origin')
-    await expect(run('push')).rejects.toThrow('没有名为 origin 的远程仓库')
+    await expect(run('push')).rejects.toThrow('No remote named origin')
   })
 })
 
@@ -200,17 +200,17 @@ describe('diff', () => {
     // Unreadable but listed, so it passes the untracked check and git itself fails on it.
     write('locked.txt', 'x\n')
     chmodSync(join(repo, 'locked.txt'), 0o000)
-    await expect(run('diff', { path: 'locked.txt', side: 'untracked' })).rejects.toThrow('读取差异失败')
+    await expect(run('diff', { path: 'locked.txt', side: 'untracked' })).rejects.toThrow('Failed to read diff')
   })
 })
 
 describe('request validation', () => {
   it.each([
-    ['a relative directory', { cwd: 'repo' }, '工作目录必须是绝对路径'],
-    ['a missing directory', { cwd: undefined }, '缺少或无效的参数：cwd'],
-    ['a path escaping the repo', { paths: ['../outside'] }, '文件路径无效'],
-    ['an absolute path', { paths: ['/etc/passwd'] }, '文件路径无效'],
-    ['a non-array paths', { paths: 'a.txt' }, '缺少或无效的参数：paths'],
+    ['a relative directory', { cwd: 'repo' }, 'Working directory must be an absolute path'],
+    ['a missing directory', { cwd: undefined }, 'Missing or invalid parameter: cwd'],
+    ['a path escaping the repo', { paths: ['../outside'] }, 'Invalid file path'],
+    ['an absolute path', { paths: ['/etc/passwd'] }, 'Invalid file path'],
+    ['a non-array paths', { paths: 'a.txt' }, 'Missing or invalid parameter: paths'],
   ])('rejects %s', async (_label, body, message) => {
     const error: unknown = await runOperation(collectingSpawn, 'stage', { cwd: repo, ...body }).catch(
       (caught: unknown) => caught,
@@ -221,9 +221,9 @@ describe('request validation', () => {
   })
 
   it('rejects a bad diff side and a non-object body', async () => {
-    await expect(run('diff', { path: 'a.txt', side: 'both' })).rejects.toThrow('缺少或无效的参数：side')
-    expect(() => asBody([])).toThrow('请求格式无效')
-    expect(() => asBody(null)).toThrow('请求格式无效')
+    await expect(run('diff', { path: 'a.txt', side: 'both' })).rejects.toThrow('Missing or invalid parameter: side')
+    expect(() => asBody([])).toThrow('Invalid request format')
+    expect(() => asBody(null)).toThrow('Invalid request format')
   })
 
   it('knows its operations', () => {

@@ -64,8 +64,8 @@ function renderHarness(state: DirectoryState) {
   )
 }
 
-const trigger = () => screen.getByRole('button', { name: /^(选择模型|请选择模型|正在加载模型)/ })
-const effortButton = () => screen.queryByRole('button', { name: /^推理等级/ })
+const trigger = () => screen.getByRole('button', { name: /^(Select model|Select a model|Loading models)/ })
+const effortButton = () => screen.queryByRole('button', { name: /^Reasoning level/ })
 const rowNames = () => screen.queryAllByRole('menuitemradio').map((row) => row.getAttribute('title') ?? row.textContent)
 
 beforeAll(() => {
@@ -83,7 +83,7 @@ describe('model control on a harness provider', () => {
       current: { provider: 'deepseek-official', model: 'flash' },
     })
     expect(container.querySelector('.dsh-cli-model')).toBeNull()
-    expect(screen.queryByRole('button', { name: /^推理等级/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Reasoning level/ })).toBeNull()
   })
 
   it('renders nothing while the session has no selection yet', () => {
@@ -93,7 +93,7 @@ describe('model control on a harness provider', () => {
 
   it('still offers a CLI menu before that CLI has reported its models', () => {
     setup(directoryState({ groups: [CLAUDE], current: { provider: 'cli-fake', model: 'gone' } }))
-    expect(trigger().textContent).toContain('请选择模型')
+    expect(trigger().textContent).toContain('Select a model')
   })
 
   it('lists only the CLI models on a CLI session', async () => {
@@ -133,7 +133,7 @@ describe('reasoning level', () => {
 
   it('still offers the levels when the session holds one the model no longer lists', () => {
     setup(directoryState({ current: { provider: 'cli-fake', model: 'flash', reasoningEffort: 'max' } }))
-    expect(effortButton()?.textContent).toContain('推理等级')
+    expect(effortButton()?.textContent).toContain('Reasoning level')
   })
 
   it('closes its menu on request', async () => {
@@ -147,14 +147,14 @@ describe('reasoning level', () => {
     const { user } = setup(directoryState(), () => Promise.resolve({ error: { message: 'busy' } }))
     await user.click(effortButton() ?? document.body)
     await user.click(screen.getByRole('menuitemradio', { name: 'Low' }))
-    expect((await screen.findByRole('alert')).textContent).toContain('切换推理等级失败：busy')
+    expect((await screen.findByRole('alert')).textContent).toContain('Failed to change reasoning level: busy')
   })
 
   it('reports a rejected change in a toast', async () => {
     const { user } = setup(directoryState(), () => Promise.reject(new Error('gone')))
     await user.click(effortButton() ?? document.body)
     await user.click(screen.getByRole('menuitemradio', { name: 'Low' }))
-    expect((await screen.findByRole('alert')).textContent).toContain('切换推理等级失败：Error: gone')
+    expect((await screen.findByRole('alert')).textContent).toContain('Failed to change reasoning level: Error: gone')
   })
 
   it('is absent for a model without levels, and while a selection settles it is disabled', () => {

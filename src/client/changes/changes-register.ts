@@ -15,7 +15,7 @@ const CHANGES_ID = 'dsh-ccgui.changes'
 const TAB_SLOT = 'sidebar.right.pane.tab'
 const TITLE_SLOT = 'sidebar.right.pane.tab.title'
 const TITLE = CHANGES_TITLE
-const DESCRIPTION = '查看、暂存并提交工作区的 Git 变更'
+const DESCRIPTION = 'View, stage, and commit Git changes in the workspace'
 /** After the harness's own entries on the guide page. */
 const GUIDE_ORDER = 70
 

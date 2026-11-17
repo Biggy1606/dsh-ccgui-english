@@ -16,7 +16,7 @@ const SUPPORTED_LANGUAGE = 'typescript'
 const SUPPORTED_FORMAT = 'function-body'
 /** The executor's nested call id: the outer id, this marker, then a dispatch counter. */
 const NESTED_CALL_ID = /^(.+):ptc:\d+$/
-const UNTITLED_DESCRIPTION = 'CLI 工具调用'
+const UNTITLED_DESCRIPTION = 'CLI tool call'
 
 /** How to send a mirrored call in a PTC session. */
 export interface PtcWrap {

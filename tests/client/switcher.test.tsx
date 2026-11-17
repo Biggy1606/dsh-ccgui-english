@@ -118,7 +118,7 @@ function renderSlot(h: Harness, id: string, sessionId = 's1') {
   return render(<Component {...injected} sessionId={sessionId} />)
 }
 
-const switcher = () => screen.getByRole('button', { name: '切换 CLI' })
+const switcher = () => screen.getByRole('button', { name: 'Switch CLI' })
 
 const bodyOf = (init: RequestInit): Record<string, unknown> =>
   typeof init.body === 'string' ? (JSON.parse(init.body) as Record<string, unknown>) : {}
@@ -244,13 +244,13 @@ describe('CliSwitcher', () => {
     renderSlot(h, 'dsh-ccgui.switcher')
     expect(switcher().textContent).toContain('Claude Code')
     expect(switcher().querySelector('[data-cli-mark="claude"]')).not.toBeNull()
-    expect(switcher().getAttribute('title')).toBe('切换 CLI')
+    expect(switcher().getAttribute('title')).toBe('Switch CLI')
     expect(h.load).toHaveBeenCalled()
   })
 
   it('asks for a choice when the session is on no provider yet', () => {
     renderSlot(harness({ ...CLI_STATE, current: null }), 'dsh-ccgui.switcher')
-    expect(switcher().textContent).toContain('选择 CLI')
+    expect(switcher().textContent).toContain('Select CLI')
     expect(switcher().querySelector('[data-cli-mark]')).toBeNull()
   })
 
@@ -343,7 +343,7 @@ describe('CliSwitcher choosing', () => {
     await userEvent.click(switcher())
     await userEvent.click(screen.getByRole('menuitemradio', { name: 'Codex CLI' }))
     await vi.waitFor(() => {
-      expect(switcher().textContent).toContain('切换失败')
+      expect(switcher().textContent).toContain('Switch failed')
     })
     expect(switcher().getAttribute('title')).toBe(hint)
   })
@@ -355,7 +355,7 @@ describe('CliSwitcher in a started session', () => {
     renderSlot(h, 'dsh-ccgui.switcher')
     h.session.set({ blank: false })
     expect(switcher().hasAttribute('disabled')).toBe(true)
-    expect(switcher().getAttribute('title')).toBe('要换 CLI，请新建会话')
+    expect(switcher().getAttribute('title')).toBe('Start a new session to switch CLIs')
     expect(switcher().querySelector('[data-icon="chevron-down"]')).toBeNull()
     await userEvent.click(switcher())
     expect(screen.queryByRole('menu')).toBeNull()

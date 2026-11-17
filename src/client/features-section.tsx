@@ -10,7 +10,8 @@ import { FEATURES } from './feature-settings.ts'
 import type { FeatureInfo, FeatureSettings } from './feature-settings.ts'
 import { useStore } from './store.ts'
 
-const FEATURES_INTRO = 'CC GUI 在 DeepSeek Harness 上加入的交互。关闭某一项即恢复原来的交互，立即生效。'
+const FEATURES_INTRO =
+  'Interface features added by CC GUI to DeepSeek Harness. Disable a feature to immediately restore the original behavior.'
 const PAGE_CLASS = 'dsh-ccgui-settings'
 
 function FeatureRow({

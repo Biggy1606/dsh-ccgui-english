@@ -66,7 +66,7 @@ describe('mode route', () => {
   it('refuses a request the connection rejects', async () => {
     const result = await post({ sessionId: 'dsh-1', provider: 'cli-x' }, { rejection: 403 })
     expect(result.status).toBe(403)
-    expect(json(result)).toEqual({ success: false, error: '未授权' })
+    expect(json(result)).toEqual({ success: false, error: 'Unauthorized' })
     expect(result.routes.modeState).not.toHaveBeenCalled()
   })
 
@@ -88,7 +88,7 @@ describe('mode route', () => {
   it('rejects a body without a session or a CLI', async () => {
     const result = await post({ provider: 'cli-x' })
     expect(result.status).toBe(400)
-    expect(json(result)).toEqual({ success: false, error: '请求缺少会话或 CLI' })
+    expect(json(result)).toEqual({ success: false, error: 'Request is missing a session or CLI' })
   })
 
   it('rejects a mode that is not a string', async () => {
@@ -99,7 +99,7 @@ describe('mode route', () => {
   it('refuses more than a request this size', async () => {
     const result = await post({ sessionId: 'dsh-1', provider: 'cli-x', mode: 'x'.repeat(9_000) })
     expect(result.status).toBe(413)
-    expect(json(result)).toEqual({ success: false, error: '请求内容过大' })
+    expect(json(result)).toEqual({ success: false, error: 'Request body is too large' })
   })
 
   it('only reads when no mode is given', async () => {
@@ -151,7 +151,7 @@ describe('mode route', () => {
       { routes: { switchMode: () => Promise.reject(new Error('socket closed')) }, warn },
     )
     expect(result.status).toBe(500)
-    expect(json(result)).toEqual({ success: false, error: '切换模式失败，请查看日志' })
+    expect(json(result)).toEqual({ success: false, error: 'Failed to switch mode; check the logs' })
     expect(warn).toHaveBeenCalledWith('ccgui: mode request failed: socket closed')
   })
 })

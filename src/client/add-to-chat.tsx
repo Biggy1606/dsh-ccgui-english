@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 /**
- * "添加到对话" in the harness's file and folder context menus: inserts an `@path` mention
+ * "Add to chat" in the harness's file and folder context menus: inserts an `@path` mention
  * into the session's composer, like the hover "+" on CC GUI's file tree rows. The harness's
  * tree only takes row accessories from its own caller, so a plugin reaches its rows
  * through the shared context menu instead.
@@ -63,10 +63,10 @@ export interface AddToChatContext {
 
 type Attach = (sessionId: string, actions: ComposerActions) => () => void
 
-const LABEL = '添加到对话'
-const FAILURE_LABEL = '没能添加到对话：输入框正在发送或已关闭，请稍后再试'
-const NO_COMPOSER = '这个会话的输入框没有打开'
-const REFUSED = '输入框暂时不接受输入'
+const LABEL = 'Add to chat'
+const FAILURE_LABEL = 'Could not add to chat: the composer is sending or closed. Try again later.'
+const NO_COMPOSER = 'The composer is not open for this session'
+const REFUSED = 'The composer is not accepting input right now'
 const ICON_KEY = 'dsh-ccgui.add-to-chat'
 const ICON_SLOT = 'contextMenu.icon'
 /** Any session-scope slot hands its entries `inputActions`; this one is always mounted with the composer. */

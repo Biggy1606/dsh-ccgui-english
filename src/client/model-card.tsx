@@ -31,10 +31,10 @@ import {
 
 /** The harness's seat offers search from the same size, so the two menus agree. */
 export const SEARCH_ABOVE = 4
-const MENU_LABEL = '模型'
-const SEARCH_LABEL = '搜索模型…'
-const NO_MATCH_LABEL = '没有匹配的模型。'
-const NO_MODELS_LABEL = '暂无可用模型'
+const MENU_LABEL = 'Models'
+const SEARCH_LABEL = 'Search models…'
+const NO_MATCH_LABEL = 'No matching models.'
+const NO_MODELS_LABEL = 'No models available'
 const ROW_MARK_SIZE = 14
 
 interface ModelRowProps {
@@ -213,7 +213,7 @@ export function ModelCard(props: ModelCardProps): ReactElement {
         </div>
       )}
       {models.unlisted !== undefined && (
-        <div className={HINT_CLASS} role="status">{`还没有读到 ${models.unlisted} 的模型列表`}</div>
+        <div className={HINT_CLASS} role="status">{`The model list for ${models.unlisted} has not loaded yet`}</div>
       )}
     </MenuSurface>
   )

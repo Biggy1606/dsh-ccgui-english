@@ -73,7 +73,7 @@ describe('ptcCall', () => {
   it('describes a command by the command, and an untitled call generically', () => {
     const command = record({ kind: 'execute', rawInput: { command: 'npm test' } })
     expect(argsOf(ptcCall(command, {})).description).toBe('npm test')
-    expect(argsOf(ptcCall(record({ title: '  ' }), {})).description).toBe('CLI 工具调用')
+    expect(argsOf(ptcCall(record({ title: '  ' }), {})).description).toBe('CLI tool call')
   })
 
   it('runs a program that hands the mirror tool the same arguments and returns its text', async () => {

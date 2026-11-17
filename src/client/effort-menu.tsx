@@ -20,9 +20,9 @@ import type { EffortLevel, MenuModels, MenuRow } from './menu-models.ts'
 import { CHEVRON_CLASS, EFFORT_CLASS, LABEL_CLASS, TRIGGER_CLASS } from './model-menu-styles.ts'
 import type { SelectModel } from './model-seat.ts'
 
-const UNKNOWN_ERROR_LABEL = '未知错误'
+const UNKNOWN_ERROR_LABEL = 'Unknown error'
 /** A level the session holds that the model no longer advertises. */
-const UNLISTED_LEVEL_LABEL = '推理等级'
+const UNLISTED_LEVEL_LABEL = 'Reasoning level'
 
 /** What the level menu is drawn from. */
 export interface EffortMenuProps {
@@ -96,10 +96,10 @@ export function EffortMenu({ models, pending, locked, select }: EffortMenuProps)
           <button
             type="button"
             className={TRIGGER_CLASS}
-            aria-label={`推理等级，当前 ${label}`}
+            aria-label={`Reasoning level, current: ${label}`}
             aria-haspopup="menu"
             aria-expanded={open}
-            title={`推理等级：${label}`}
+            title={`Reasoning level: ${label}`}
             disabled={locked || pending !== null}
             onClick={() => {
               setOpen((value) => !value)
@@ -113,7 +113,7 @@ export function EffortMenu({ models, pending, locked, select }: EffortMenuProps)
       {failure !== undefined && (
         <Toast
           key={failure.seq}
-          text={`切换推理等级失败：${failure.text}`}
+          text={`Failed to change reasoning level: ${failure.text}`}
           icon={<IconWarningOutlineRegular />}
           anchor={rootRef.current?.closest<HTMLElement>('[data-composer-card]') ?? null}
           onDone={clearFailure}

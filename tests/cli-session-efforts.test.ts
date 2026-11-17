@@ -113,7 +113,7 @@ describe('CliSession reasoning level', () => {
   it('tells the user when the chosen level is not offered', async () => {
     const { session } = withEfforts(end)
     const chunks = await collect(session.stream({ messages: [user('1', 'hi')], reasoningEffort: 'ultra' }))
-    expect(textOf(chunks)).toContain('不支持思考强度 ultra')
+    expect(textOf(chunks)).toContain('does not support reasoning effort ultra')
     expect(textOf(chunks)).toContain('high')
   })
 

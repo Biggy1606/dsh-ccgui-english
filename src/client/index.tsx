@@ -114,8 +114,8 @@ const WRAP_CLASS = 'dsh-cli-switcher-wrap'
 const BUTTON_CLASS = 'dsh-cli-switcher'
 const SESSION_MARK_CLASS = 'dsh-cli-session-mark'
 const NOT_STARTED = { blank: true }
-const NO_CHOICE_LABEL = '选择 CLI'
-const SWITCH_FAILED_LABEL = '切换失败'
+const NO_CHOICE_LABEL = 'Select CLI'
+const SWITCH_FAILED_LABEL = 'Switch failed'
 
 // The composer slot wraps each entry, hence its `> * >`. A session row has one 16px cell,
 // so this mark gives way to whichever occupant the harness put there first.
@@ -217,7 +217,7 @@ function CliSwitcher({ directory, load, select, session, prefs }: CliSwitcherPro
   const items = arrangeChoices(listed, prefsSnapshot)
   // A CLI does not know a conversation it did not take part in, so switching is
   // for new sessions. The model menu can still change models within this CLI.
-  const hint = started ? '要换 CLI，请新建会话' : (error ?? '切换 CLI')
+  const hint = started ? 'Start a new session to switch CLIs' : (error ?? 'Switch CLI')
   const label = error === undefined ? (currentLabel ?? NO_CHOICE_LABEL) : SWITCH_FAILED_LABEL
   return (
     <Menu
@@ -238,7 +238,7 @@ function CliSwitcher({ directory, load, select, session, prefs }: CliSwitcherPro
         <button
           type="button"
           className={BUTTON_CLASS}
-          aria-label="切换 CLI"
+          aria-label="Switch CLI"
           title={hint}
           disabled={started}
           onClick={() => {

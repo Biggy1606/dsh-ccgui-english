@@ -7,7 +7,7 @@
 import type { ReactElement } from 'react'
 import { ChangesIcon } from './changes-icons.tsx'
 
-export const CHANGES_TITLE = '变更'
+export const CHANGES_TITLE = 'Changes'
 const GLYPH_SIZE = 16
 
 /** @returns the glyph followed by the name. */

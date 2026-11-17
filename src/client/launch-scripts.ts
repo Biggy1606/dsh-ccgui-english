@@ -108,9 +108,9 @@ export function shellInput(command: string): string {
  * @returns a message for the user, or undefined when the draft can be saved.
  */
 export function draftProblem(draft: LaunchScriptDraft): string | undefined {
-  if (draft.command.trim() === '') return '请填写要运行的命令'
-  if (draft.command.length > MAX_COMMAND_LENGTH) return `命令不能超过 ${MAX_COMMAND_LENGTH} 个字符`
-  if (draft.name.trim().length > MAX_NAME_LENGTH) return `名称不能超过 ${MAX_NAME_LENGTH} 个字符`
+  if (draft.command.trim() === '') return 'Enter a command to run'
+  if (draft.command.length > MAX_COMMAND_LENGTH) return `Command cannot exceed ${MAX_COMMAND_LENGTH} characters`
+  if (draft.name.trim().length > MAX_NAME_LENGTH) return `Name cannot exceed ${MAX_NAME_LENGTH} characters`
   return undefined
 }
 

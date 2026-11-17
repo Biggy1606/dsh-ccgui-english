@@ -41,9 +41,9 @@ const state = (fields: Partial<DirectoryState> = {}): DirectoryState => ({
 describe('menuModels on a provider the harness runs', () => {
   it('lists every provider but the CLIs, account first and API key second, with headings', () => {
     const models = menuModels(state())
-    expect(models.sections.map((section) => section.name)).toEqual(['DeepSeek 账号', 'DeepSeek', 'Acme'])
+    expect(models.sections.map((section) => section.name)).toEqual(['DeepSeek Account', 'DeepSeek', 'Acme'])
     expect(models.sections.every((section) => section.headed)).toBe(true)
-    expect(models.label).toBe('模型')
+    expect(models.label).toBe('Models')
     expect(models.unlisted).toBeUndefined()
   })
 

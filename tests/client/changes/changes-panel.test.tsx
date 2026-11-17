@@ -58,25 +58,27 @@ describe('ChangesPanel', () => {
   it('shows the header, summary and groups like CC GUI, with staged files selected', async () => {
     const { fetchFn } = server()
     renderPanel(fetchFn)
-    expect(await screen.findByText('3 个未提交变更')).toBeTruthy()
+    expect(await screen.findByText('3 uncommitted changes')).toBeTruthy()
     expect(screen.getByText('↑1 ↓0')).toBeTruthy()
     expect(screen.getByText('+18')).toBeTruthy()
     expect(screen.getByText('−32')).toBeTruthy()
-    expect(screen.getByText('已选 1 项')).toBeTruthy()
-    expect(screen.getByLabelText('分支').textContent).toContain('main')
-    for (const title of ['已暂存', '未暂存', '未跟踪']) expect(screen.getByRole('region', { name: title })).toBeTruthy()
-    expect(screen.getByLabelText<HTMLInputElement>('选择 src/app/page.tsx').checked).toBe(true)
-    expect(screen.getByLabelText<HTMLInputElement>('选择 notes.md').checked).toBe(false)
-    expect(screen.getByRole('button', { name: '提交 (1)' })).toHaveProperty('disabled', true)
+    expect(screen.getByText('1 selected')).toBeTruthy()
+    expect(screen.getByLabelText('Branch').textContent).toContain('main')
+    for (const title of ['Staged', 'Unstaged', 'Untracked']) {
+      expect(screen.getByRole('region', { name: title })).toBeTruthy()
+    }
+    expect(screen.getByLabelText<HTMLInputElement>('Select src/app/page.tsx').checked).toBe(true)
+    expect(screen.getByLabelText<HTMLInputElement>('Select notes.md').checked).toBe(false)
+    expect(screen.getByRole('button', { name: 'Commit (1)' })).toHaveProperty('disabled', true)
   })
 
   it('commits the selected files with the message and clears the message', async () => {
     const { fetchFn, calls } = server()
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    await user.click(await screen.findByLabelText('选择 notes.md'))
-    await user.type(screen.getByLabelText('提交信息'), 'feat: add notes')
-    await user.click(screen.getByRole('button', { name: '提交 (2)' }))
+    await user.click(await screen.findByLabelText('Select notes.md'))
+    await user.type(screen.getByLabelText('Commit message'), 'feat: add notes')
+    await user.click(screen.getByRole('button', { name: 'Commit (2)' }))
     await waitFor(() => {
       expect(calls.find((call) => call.operation === 'commit')?.body).toEqual({
         message: 'feat: add notes',
@@ -85,7 +87,7 @@ describe('ChangesPanel', () => {
       })
     })
     await waitFor(() => {
-      expect(screen.getByLabelText<HTMLTextAreaElement>('提交信息').value).toBe('')
+      expect(screen.getByLabelText<HTMLTextAreaElement>('Commit message').value).toBe('')
     })
   })
 
@@ -93,7 +95,7 @@ describe('ChangesPanel', () => {
     const { fetchFn, ops } = server()
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    await user.type(await screen.findByLabelText('提交信息'), 'fix: x{Meta>}{Enter}{/Meta}')
+    await user.type(await screen.findByLabelText('Commit message'), 'fix: x{Meta>}{Enter}{/Meta}')
     await waitFor(() => {
       expect(ops()).toContain('commit')
     })
@@ -103,10 +105,10 @@ describe('ChangesPanel', () => {
     const { fetchFn } = server()
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    const ai = await screen.findByRole('button', { name: 'AI 生成提交信息' })
-    expect(screen.queryByText('暂未开放，敬请期待')).toBeNull()
+    const ai = await screen.findByRole('button', { name: 'Generate commit message with AI' })
+    expect(screen.queryByText('Not available yet')).toBeNull()
     await user.click(ai)
-    expect(await screen.findByText('暂未开放，敬请期待')).toBeTruthy()
+    expect(await screen.findByText('Not available yet')).toBeTruthy()
   })
 
   it('selects a whole group from its checkbox and marks a partial group', async () => {
@@ -121,30 +123,30 @@ describe('ChangesPanel', () => {
     })
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    const group = await screen.findByRole('region', { name: '未跟踪' })
-    await user.click(within(group).getByLabelText('选择 a.md'))
-    expect(within(group).getByLabelText<HTMLInputElement>('全选本组').indeterminate).toBe(true)
-    await user.click(within(group).getByLabelText('全选本组'))
-    expect(screen.getByText('已选 3 项')).toBeTruthy()
+    const group = await screen.findByRole('region', { name: 'Untracked' })
+    await user.click(within(group).getByLabelText('Select a.md'))
+    expect(within(group).getByLabelText<HTMLInputElement>('Select all in group').indeterminate).toBe(true)
+    await user.click(within(group).getByLabelText('Select all in group'))
+    expect(screen.getByText('3 selected')).toBeTruthy()
   })
 
   it('toggles a group from its header row without its controls toggling it', async () => {
     const { fetchFn } = server()
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    const staged = await screen.findByRole('region', { name: '已暂存' })
+    const staged = await screen.findByRole('region', { name: 'Staged' })
     const rowName = /page\.tsx/
 
-    await user.click(within(staged).getByText('已暂存'))
+    await user.click(within(staged).getByText('Staged'))
     expect(within(staged).queryByRole('button', { name: rowName })).toBeNull()
-    expect(within(staged).getByRole('button', { name: '展开已暂存' })).toBeTruthy()
+    expect(within(staged).getByRole('button', { name: 'Expand Staged' })).toBeTruthy()
 
-    await user.click(within(staged).getByText('已暂存'))
+    await user.click(within(staged).getByText('Staged'))
     expect(within(staged).getByRole('button', { name: rowName })).toBeTruthy()
-    expect(within(staged).getByRole('button', { name: '折叠已暂存' })).toBeTruthy()
+    expect(within(staged).getByRole('button', { name: 'Collapse Staged' })).toBeTruthy()
 
-    await user.click(within(staged).getByLabelText('全选本组'))
-    await user.click(within(staged).getByRole('button', { name: '全部取消暂存' }))
+    await user.click(within(staged).getByLabelText('Select all in group'))
+    await user.click(within(staged).getByRole('button', { name: 'Unstage all' }))
     expect(within(staged).getByRole('button', { name: rowName })).toBeTruthy()
   })
 
@@ -152,17 +154,17 @@ describe('ChangesPanel', () => {
     const { fetchFn, calls } = server()
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    const unstaged = await screen.findByRole('region', { name: '未暂存' })
-    await user.click(within(unstaged).getByRole('button', { name: '暂存' }))
+    const unstaged = await screen.findByRole('region', { name: 'Unstaged' })
+    await user.click(within(unstaged).getByRole('button', { name: 'Stage' }))
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({ operation: 'stage', body: { paths: ['src/lib/courses.ts'] } })
     })
-    await user.click(screen.getByRole('button', { name: '全部取消暂存' }))
+    await user.click(screen.getByRole('button', { name: 'Unstage all' }))
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({ operation: 'unstage', body: { paths: ['src/app/page.tsx'] } })
     })
-    const untracked = screen.getByRole('region', { name: '未跟踪' })
-    await user.click(within(untracked).getByRole('button', { name: '全部暂存' }))
+    const untracked = screen.getByRole('region', { name: 'Untracked' })
+    await user.click(within(untracked).getByRole('button', { name: 'Stage all' }))
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({ operation: 'stage', body: { paths: ['notes.md'] } })
     })
@@ -172,24 +174,26 @@ describe('ChangesPanel', () => {
     const { fetchFn, calls, ops } = server()
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    const untracked = await screen.findByRole('region', { name: '未跟踪' })
-    await user.click(within(untracked).getByRole('button', { name: '撤销更改' }))
-    const dialog = screen.getByRole('dialog', { name: '撤销更改' })
-    expect(dialog.textContent).toContain('确定要撤销对“notes.md”的更改吗？')
-    await user.click(within(dialog).getByRole('button', { name: '取消' }))
+    const untracked = await screen.findByRole('region', { name: 'Untracked' })
+    await user.click(within(untracked).getByRole('button', { name: 'Discard changes' }))
+    const dialog = screen.getByRole('dialog', { name: 'Discard changes' })
+    expect(dialog.textContent).toContain('Discard changes to “notes.md”?')
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
     expect(ops()).not.toContain('discard')
 
-    const unstaged = screen.getByRole('region', { name: '未暂存' })
-    await user.click(within(unstaged).getByRole('button', { name: '全部撤销' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '确定' }))
+    const unstaged = screen.getByRole('region', { name: 'Unstaged' })
+    await user.click(within(unstaged).getByRole('button', { name: 'Discard all' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm' }))
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({
         operation: 'discard',
         body: { tracked: ['src/lib/courses.ts'], untracked: [] },
       })
     })
-    await user.click(within(screen.getByRole('region', { name: '未跟踪' })).getByRole('button', { name: '撤销更改' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '确定' }))
+    await user.click(
+      within(screen.getByRole('region', { name: 'Untracked' })).getByRole('button', { name: 'Discard changes' }),
+    )
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm' }))
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({ operation: 'discard', body: { tracked: [], untracked: ['notes.md'] } })
     })
@@ -204,10 +208,10 @@ describe('ChangesPanel', () => {
     await user.click(await screen.findByRole('button', { name: /courses\.ts/ }))
     expect(await screen.findByText('+new')).toBeTruthy()
     expect(screen.getByText('-old')).toBeTruthy()
-    expect(screen.getByText('未暂存')).toBeTruthy()
+    expect(screen.getByText('Unstaged')).toBeTruthy()
     expect(calls.at(-1)).toMatchObject({ operation: 'diff', body: { path: 'src/lib/courses.ts', side: 'unstaged' } })
-    await user.click(screen.getByRole('button', { name: '返回' }))
-    expect(await screen.findByText('3 个未提交变更')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    expect(await screen.findByText('3 uncommitted changes')).toBeTruthy()
   })
 
   it('says when a diff is too large, empty, or failed', async () => {
@@ -216,12 +220,12 @@ describe('ChangesPanel', () => {
     const user = userEvent.setup()
     renderPanel(fetchFn)
     await user.click(await screen.findByRole('button', { name: /page\.tsx/ }))
-    expect(await screen.findByText('Diff 过大，已截断')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: '返回' }))
+    expect(await screen.findByText('Diff is too large and has been truncated')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
     answer = () => ({ patch: '', truncated: false })
     await user.click(await screen.findByRole('button', { name: /page\.tsx/ }))
-    expect(await screen.findByText('没有可显示的差异')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: '返回' }))
+    expect(await screen.findByText('No differences to display')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
     answer = () => {
       throw new Error('读取差异失败：boom')
     }
@@ -233,17 +237,17 @@ describe('ChangesPanel', () => {
     const { fetchFn, ops } = server()
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    await screen.findByText('3 个未提交变更')
-    await user.click(screen.getByRole('button', { name: '拉取' }))
+    await screen.findByText('3 uncommitted changes')
+    await user.click(screen.getByRole('button', { name: 'Pull' }))
     await waitFor(() => {
       expect(ops()).toContain('pull')
     })
-    await user.click(screen.getByRole('button', { name: '推送' }))
+    await user.click(screen.getByRole('button', { name: 'Push' }))
     await waitFor(() => {
       expect(ops()).toContain('push')
     })
     const before = ops().filter((op) => op === 'status').length
-    await user.click(screen.getByRole('button', { name: '刷新' }))
+    await user.click(screen.getByRole('button', { name: 'Refresh' }))
     await waitFor(() => {
       expect(ops().filter((op) => op === 'status').length).toBe(before + 1)
     })
@@ -257,9 +261,9 @@ describe('ChangesPanel', () => {
     })
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    await user.click(await screen.findByRole('button', { name: '推送' }))
+    await user.click(await screen.findByRole('button', { name: 'Push' }))
     expect((await screen.findByRole('alert')).textContent).toContain('没有名为 origin 的远程仓库')
-    await user.click(screen.getByRole('button', { name: '关闭' }))
+    await user.click(screen.getByRole('button', { name: 'Close' }))
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
@@ -269,19 +273,19 @@ describe('ChangesPanel', () => {
     })
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    await user.click(await screen.findByLabelText('分支'))
+    await user.click(await screen.findByLabelText('Branch'))
     await user.click(await screen.findByRole('menuitemradio', { name: 'dev' }))
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({ operation: 'checkout', body: { branch: 'dev', remote: false } })
     })
-    await user.click(screen.getByLabelText('分支'))
+    await user.click(screen.getByLabelText('Branch'))
     await user.click(await screen.findByRole('menuitemradio', { name: /origin\/feat/ }))
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({ operation: 'checkout', body: { branch: 'origin/feat', remote: true } })
     })
-    await user.click(screen.getByLabelText('分支'))
-    await user.click(await screen.findByRole('menuitemradio', { name: '新建分支…' }))
-    await user.type(screen.getByLabelText('分支名称'), 'topic{Enter}')
+    await user.click(screen.getByLabelText('Branch'))
+    await user.click(await screen.findByRole('menuitemradio', { name: 'New branch…' }))
+    await user.type(screen.getByLabelText('Branch name'), 'topic{Enter}')
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({ operation: 'create-branch', body: { branch: 'topic' } })
     })
@@ -291,26 +295,26 @@ describe('ChangesPanel', () => {
     const { fetchFn, ops } = server({ branches: () => ({ repo: false }) })
     const user = userEvent.setup()
     renderPanel(fetchFn)
-    await user.click(await screen.findByLabelText('分支'))
-    await user.click(await screen.findByRole('menuitemradio', { name: '新建分支…' }))
-    await user.click(screen.getByRole('button', { name: '返回' }))
-    await user.click(screen.getByLabelText('分支'))
-    await user.click(await screen.findByRole('menuitemradio', { name: '新建分支…' }))
-    await user.type(screen.getByLabelText('分支名称'), 'x{Escape}')
-    expect(screen.getByLabelText('分支')).toBeTruthy()
+    await user.click(await screen.findByLabelText('Branch'))
+    await user.click(await screen.findByRole('menuitemradio', { name: 'New branch…' }))
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await user.click(screen.getByLabelText('Branch'))
+    await user.click(await screen.findByRole('menuitemradio', { name: 'New branch…' }))
+    await user.type(screen.getByLabelText('Branch name'), 'x{Escape}')
+    expect(screen.getByLabelText('Branch')).toBeTruthy()
     expect(ops()).not.toContain('create-branch')
   })
 
   it('shows empty, not-a-repo, no-directory and load-failure states', async () => {
     const clean = server({ status: () => ({ ...STATUS, staged: [], unstaged: [], untracked: [] }) })
     renderPanel(clean.fetchFn)
-    expect(await screen.findByText('没有变更')).toBeTruthy()
+    expect(await screen.findByText('No changes')).toBeTruthy()
     cleanup()
     renderPanel(server({ status: () => ({ repo: false }) }).fetchFn)
-    expect(await screen.findByText('当前工作区不是 Git 仓库')).toBeTruthy()
+    expect(await screen.findByText('The current workspace is not a Git repository')).toBeTruthy()
     cleanup()
     renderPanel(server().fetchFn, '')
-    expect(screen.getByText('这个会话还没有工作目录')).toBeTruthy()
+    expect(screen.getByText('This session has no working directory yet')).toBeTruthy()
     cleanup()
     const failing = server({
       status: () => {
@@ -325,7 +329,7 @@ describe('ChangesPanel', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const { fetchFn, ops } = server()
     const view = renderPanel(fetchFn)
-    await screen.findByText('3 个未提交变更')
+    await screen.findByText('3 uncommitted changes')
     const count = () => ops().filter((op) => op === 'status').length
     window.dispatchEvent(new Event('focus'))
     await waitFor(() => {
@@ -347,7 +351,7 @@ describe('ChangesPanel', () => {
     try {
       const { fetchFn, ops } = server()
       renderPanel(fetchFn)
-      await screen.findByText('3 个未提交变更')
+      await screen.findByText('3 uncommitted changes')
       const count = () => ops().filter((op) => op === 'status').length
       visibility.state = 'hidden'
       document.dispatchEvent(new Event('visibilitychange'))

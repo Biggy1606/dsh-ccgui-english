@@ -40,8 +40,8 @@ describe('registerChanges', () => {
       guide: { title: () => string; description: () => string }[]
     }
     expect(definition).toMatchObject({ id: 'dsh-ccgui.changes', kind: CHANGES_KIND })
-    expect(definition.title('')).toBe('变更')
-    expect(definition.guide[0]?.title()).toBe('变更')
+    expect(definition.title('')).toBe('Changes')
+    expect(definition.guide[0]?.title()).toBe('Changes')
     expect(definition.guide[0]?.description()).toContain('Git')
 
     const [options, component] = slotRegister.mock.calls[0] as [

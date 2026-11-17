@@ -20,13 +20,14 @@ import { scriptLabel } from './launch-scripts.ts'
 import type { LaunchScript } from './launch-scripts.ts'
 import { LS } from './launch-script-styles.ts'
 
-const DEFAULT_BADGE = '默认'
-const RUN = '运行'
-const EDIT = '编辑'
-const MAKE_DEFAULT = '设为默认'
-const DELETE = '删除'
-const CONFIRM_DELETE = '再点一次删除'
-const EMPTY_TEXT = '还没有启动脚本。添加一条常用命令，例如启动开发服务器，之后在标题栏一键运行。'
+const DEFAULT_BADGE = 'Default'
+const RUN = 'Run'
+const EDIT = 'Edit'
+const MAKE_DEFAULT = 'Set as default'
+const DELETE = 'Delete'
+const CONFIRM_DELETE = 'Click again to delete'
+const EMPTY_TEXT =
+  'No startup scripts yet. Add a frequently used command, such as a development server, to run it from the title bar.'
 const TOOLTIP_DELAY_MS = 500
 
 /** What a row can ask the manager to do. */
