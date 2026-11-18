@@ -115,7 +115,7 @@ export class CliBridgeAdapter extends LlmAdapter {
     // Read first, so a CLI that cannot run under this PTC runtime is never started.
     const ptc = this.deps.ptcWrapFor(provider, sessionId)
     const session = this.deps.resolveSession(provider, sessionId)
-    yield* session.stream({
+    const chunks = session.stream({
       messages,
       signal,
       model,
@@ -123,5 +123,18 @@ export class CliBridgeAdapter extends LlmAdapter {
       currentTurnMessageIds: this.deps.currentTurnMessageIds(sessionId),
       ...(ptc === undefined ? {} : { ptc }),
     })
+    if (session.provider === provider) {
+      yield* chunks
+      return
+    }
+    // The turn is pinned to another CLI. Its ACP session id must not travel under the
+    // requested provider, or the next turn would try to resume the wrong CLI's session.
+    for await (const chunk of chunks) {
+      if (chunk.type === 'finish' && chunk.replayState !== undefined) {
+        yield { type: 'finish', reason: chunk.reason }
+      } else {
+        yield chunk
+      }
+    }
   }
 }

@@ -96,10 +96,10 @@ describe('model control on a harness provider', () => {
     expect(trigger().textContent).toContain('Select a model')
   })
 
-  it('lists only the CLI models on a CLI session', async () => {
+  it('lists the harness and every CLI on a CLI session', async () => {
     const { user } = setup()
     await user.click(trigger())
-    expect(rowNames()).toEqual(['DeepSeek Flash', 'DeepSeek Pro'])
+    expect(rowNames()).toEqual(['DeepSeek Flash', 'DeepSeek Pro', 'Opus', 'Acme One'])
   })
 })
 

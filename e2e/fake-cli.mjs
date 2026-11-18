@@ -33,7 +33,7 @@ const harnessSeatDisplays = () =>
     .locator('[data-slot="conversation.input.model"]')
     .evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).display))
 // The composer's own control for the CLI's native modes, beside the model and its level.
-const modeTrigger = () => page.getByRole('button', { name: /^CLI 模式，当前/ })
+const modeTrigger = () => page.getByRole('button', { name: /^CLI mode, current:/ })
 
 /** Switch the harness's access mode, confirming 完全权限's own risk dialog. */
 async function setAccessMode(name) {
@@ -87,15 +87,15 @@ await scenario('seat: a harness session keeps its native model control', async (
   if (seats.length === 0 || seats.some((display) => display === 'none'))
     throw new Error(`harness seat hidden or missing: ${seats.join()}`)
   await shot('native-model-seat')
-  // The native seat reads one global catalog, so it also lists CLIs a session it runs cannot
-  // move to. Only those groups may be hidden; its own providers and settings stay put.
+  // The native seat reads one global catalog, and both surfaces now list every provider:
+  // a harness session can move to a CLI from here, and a CLI session can move back.
   await page.locator('[data-slot="conversation.input.model"] button').first().click()
   await sleep(400)
   const visibleCliGroups = await page
     .locator('section[data-menu-group]:has([data-provider-id^="cli-"])')
     .evaluateAll((nodes) => nodes.filter((node) => getComputedStyle(node).display !== 'none').length)
-  if (visibleCliGroups !== 0) throw new Error(`${visibleCliGroups} CLI groups still listed in the native menu`)
-  // This home signs in to no provider, so plant one to prove the filter stops at the CLIs.
+  if (visibleCliGroups === 0) throw new Error('the native menu hides every CLI group')
+  // This home signs in to no provider, so plant one to prove the list still shows it.
   await page.evaluate(() => {
     const menu = document.querySelector('[role="menu"][aria-label="模型"]')
     const section = document.createElement('section')
@@ -106,8 +106,8 @@ await scenario('seat: a harness session keeps its native model control', async (
     menu?.append(section)
   })
   const probeDisplay = await page.locator('#harness-provider-probe').evaluate((node) => getComputedStyle(node).display)
-  if (probeDisplay === 'none') throw new Error('a harness provider was hidden along with the CLIs')
-  await shot('native-model-seat-filtered')
+  if (probeDisplay === 'none') throw new Error('the native menu hides a harness provider')
+  await shot('native-model-seat-all-providers')
   await page.keyboard.press('Escape')
   await sleep(250)
   // This session is the harness's own, so the access control keeps the composer's seat
@@ -258,10 +258,11 @@ await scenario('models: the menu shows what the CLI reports, naming its default'
   if (names.join() !== 'Fake Small（默认）,Fake Large') throw new Error(`rows: ${names.join()}`)
 })
 
-await scenario("flat menu: one click shows only this CLI's models, with no second level", async () => {
+await scenario("flat menu: one click shows this CLI's models among every provider, with no second level", async () => {
   await modelTrigger().click()
   await sleep(300)
   const names = await page
+    .getByRole('group', { name: FAKE, exact: true })
     .getByRole('menuitemradio')
     .evaluateAll((rows) => rows.map((row) => row.getAttribute('title')))
   if (names.join() !== 'Fake Small（默认）,Fake Large') throw new Error(`rows: ${names.join()}`)
@@ -283,6 +284,7 @@ await scenario('model marks: an unidentifiable model gets a neutral mark, never 
   await modelTrigger().click()
   await sleep(300)
   const marks = await page
+    .getByRole('group', { name: FAKE, exact: true })
     .getByRole('menuitemradio')
     .evaluateAll((rows) => rows.map((row) => row.querySelector('[data-cli-mark]')?.getAttribute('data-cli-mark')))
   if (marks.join() !== 'unknown,unknown') throw new Error(`model marks: ${marks.join()}`)
@@ -293,14 +295,17 @@ await scenario('model marks: an unidentifiable model gets a neutral mark, never 
 await scenario("flat menu: the harness's control is out of the row", async () => {
   const seats = await harnessSeatDisplays()
   if (!seats.every((display) => display === 'none')) throw new Error(`harness seat: ${seats.join()}`)
-  if ((await page.getByRole('button', { name: /^(选择模型|请选择模型)/ }).count()) !== 1)
-    throw new Error('more than one model control')
+  const visibleNativeControls = await page
+    .locator('[data-slot="conversation.input.model"] button')
+    .filter({ visible: true })
+    .count()
+  if (visibleNativeControls !== 0) throw new Error('the harness model control is still visible')
 })
 
-await scenario('flat menu: arrows move, Enter settles, and the trigger takes the name', async () => {
+await scenario('flat menu: typing a name and Enter settles, and the trigger takes the name', async () => {
   await modelTrigger().click()
   await sleep(300)
-  await page.keyboard.press('ArrowDown')
+  await page.getByRole('searchbox').fill('Fake Large')
   await page.keyboard.press('Enter')
   await until(async () => (await modelTrigger().getAttribute('title')) === 'Fake Large', 'trigger naming Fake Large')
   // The row settles first and the menu closes on the next tick, so wait for both.
@@ -382,10 +387,18 @@ await scenario('refusal: a telemetry dump falls back to the plain failure', asyn
   }
 })
 
-await scenario('locked: a started session keeps its CLI, and says how to change', async () => {
-  if (!(await cliSwitcher().isDisabled())) throw new Error('switcher still enabled after the session started')
+await scenario('switcher: a started session can still switch, and the title warns about the context', async () => {
+  if (await cliSwitcher().isDisabled()) throw new Error('switcher disabled after the session started')
   const title = await cliSwitcher().getAttribute('title')
-  if (!title.includes('新建会话')) throw new Error(`hint: ${title}`)
+  if (title !== 'Switch CLI — the new CLI starts without this conversation') throw new Error(`title: ${title}`)
+  // The menu is open to the whole list; picking one here could start or download an npx CLI,
+  // so the contract checked is that it opens, not that a choice is made.
+  await cliSwitcher().click()
+  await sleep(300)
+  const items = page.getByRole('menuitemradio').or(page.getByRole('menuitem'))
+  await items.first().waitFor({ timeout: 10_000 })
+  await page.keyboard.press('Escape')
+  await sleep(250)
 })
 
 // The CLI's modes are its own: the control shows the names it reported and sends the id back.
@@ -393,7 +406,7 @@ await scenario('mode: the CLI lists its own modes, and a pick made before it run
   await newCliSession(FAKE)
   await until(async () => (await modeTrigger().count()) > 0, 'the CLI mode control', 30_000)
   const label = await modeTrigger().getAttribute('aria-label')
-  if (label !== 'CLI 模式，当前 Default') throw new Error(`label: ${label}`)
+  if (label !== 'CLI mode, current: Default') throw new Error(`label: ${label}`)
   await modeTrigger().click()
   await sleep(300)
   const rows = await page.getByRole('menuitem').evaluateAll((nodes) => nodes.map((node) => node.textContent))
@@ -402,13 +415,14 @@ await scenario('mode: the CLI lists its own modes, and a pick made before it run
   await sleep(300)
   // Nothing to change before the CLI session exists, so the pick says when it will apply.
   const pending = await modeTrigger().getAttribute('title')
-  if (pending === null || !pending.includes('下一条消息发送时生效')) throw new Error(`pending hint: ${pending}`)
+  if (pending === null || !pending.includes('takes effect with the next message'))
+    throw new Error(`pending hint: ${pending}`)
   await send('WHICH MODE')
   await untilText('mode=plan')
   await idle('WHICH MODE')
   await until(async () => {
     const title = await modeTrigger().getAttribute('title')
-    return title !== null && !title.includes('下一条消息发送时生效')
+    return title !== null && !title.includes('takes effect with the next message')
   }, 'the pick to be confirmed')
 })
 
@@ -418,7 +432,8 @@ await scenario('mode switch mid-session: the live CLI changes before the next pr
   await page.getByRole('menuitem', { name: 'Default', exact: true }).click()
   await sleep(500)
   const title = await modeTrigger().getAttribute('title')
-  if (title === null || title.includes('下一条消息发送时生效')) throw new Error('a running CLI should apply at once')
+  if (title === null || title.includes('takes effect with the next message'))
+    throw new Error('a running CLI should apply at once')
   await send('WHICH MODE')
   await untilText('mode=default')
 })
@@ -467,7 +482,7 @@ await scenario('marks: the switcher, its menu and the session list say which CLI
   await shot('marks')
 })
 
-await scenario('sidebar: opening it shows 工作区文件 instead of the guide, with 变更 beside it', async () => {
+await scenario('sidebar: opening it shows 工作区文件 instead of the guide, with Changes beside it', async () => {
   const expand = page.getByRole('button', { name: '打开右侧边栏' })
   const files = () => page.locator('[data-files-page]').filter({ visible: true }).count()
   await until(() => expand.isVisible(), 'sidebar expand button')
@@ -475,15 +490,15 @@ await scenario('sidebar: opening it shows 工作区文件 instead of the guide, 
   await until(async () => (await files()) === 1, 'files page shown')
   if ((await page.locator('[data-sidebar-right-guide]').count()) !== 0) throw new Error('the guide is still open')
   await shot('sidebar-files')
-  // 变更 opens beside 工作区文件 the way CC GUI's panel does, with 文件 in front.
-  // Each chip holds its close button, so a tab's name is "变更 关闭"; match the start.
-  const changesTab = page.getByRole('tab', { name: /^变更/ })
-  await until(async () => (await changesTab.count()) === 1, '变更 tab beside the files page')
+  // Changes opens beside the files page the way CC GUI's panel does, with the files tab in front.
+  // Each chip holds its close button, so a tab's name is "Changes 关闭"; match the start.
+  const changesTab = page.getByRole('tab', { name: /^Changes/ })
+  await until(async () => (await changesTab.count()) === 1, 'Changes tab beside the files page')
   if ((await page.locator('.dsh-ccgui-changes').filter({ visible: true }).count()) !== 0)
-    throw new Error('变更 is in front of 工作区文件')
+    throw new Error('Changes is in front of the files page')
   await changesTab.click()
   const branch = page.locator('.dsh-ccgui-changes-branch-button').filter({ visible: true })
-  await until(async () => (await branch.count()) === 1, '变更 panel with its branch picker')
+  await until(async () => (await branch.count()) === 1, 'Changes panel with its branch picker')
   await until(async () => /main|master/.test(await branch.innerText()), 'branch name in the picker')
   await shot('sidebar-changes')
   await page.getByRole('tab', { name: /^文件/ }).click()
@@ -493,7 +508,7 @@ await scenario('sidebar: opening it shows 工作区文件 instead of the guide, 
 })
 
 await scenario('terminal: the header button opens, hides and brings back one terminal', async () => {
-  const button = page.getByRole('button', { name: '切换终端' })
+  const button = page.getByRole('button', { name: 'Toggle terminal' })
   const shown = () => page.locator('[data-sidebar-terminal]').filter({ visible: true }).count()
   await until(() => button.isVisible(), 'terminal button')
   await button.click()
@@ -516,25 +531,25 @@ await scenario('launch script: saved once, it runs in a terminal tab of its own 
   const terminals = () =>
     page
       .locator('[data-dockkit-tab]:has([data-sidebar-right-tab])')
-      .filter({ hasNotText: /^\s*(文件|变更)\s*$/ })
+      .filter({ hasNotText: /^\s*(文件|Changes)\s*$/ })
       .count()
-  await page.getByRole('button', { name: '设置启动脚本' }).click()
-  const dialog = page.getByRole('dialog', { name: '添加启动脚本' })
-  await dialog.getByLabel('名称').fill('回显')
-  await dialog.getByLabel('命令').fill('echo LAUNCH_OK_$((40+2))')
+  await page.getByRole('button', { name: 'Set up startup scripts' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add Startup Script' })
+  await dialog.getByLabel('Name').fill('回显')
+  await dialog.getByLabel('Command').fill('echo LAUNCH_OK_$((40+2))')
   await shot('launch-script-form')
-  await dialog.getByRole('button', { name: '保存' }).click()
-  const list = page.getByRole('dialog', { name: '启动脚本' })
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  const list = page.getByRole('dialog', { name: 'Startup Scripts' })
   await until(() => list.isVisible(), 'script list')
   await shot('launch-script-list')
-  await list.getByRole('button', { name: '完成' }).click()
+  await list.getByRole('button', { name: 'Done' }).click()
   const before = await terminals()
-  await page.getByRole('button', { name: '运行：回显' }).click()
+  await page.getByRole('button', { name: 'Run: 回显' }).click()
   await until(async () => (await output()) === 1, 'script output in a terminal', 20_000)
   await shot('launch-script-ran')
   if ((await terminals()) !== before + 1) throw new Error('the script did not get a terminal of its own')
   const firstRun = await page.locator('[data-sidebar-terminal]').filter({ hasText: 'LAUNCH_OK_42' }).elementHandle()
-  await page.getByRole('button', { name: '启动脚本' }).click()
+  await page.getByRole('button', { name: 'Startup scripts' }).click()
   await page
     .getByRole('menuitem', { name: /回显/ })
     .or(page.getByRole('menuitemradio', { name: /回显/ }))
@@ -545,28 +560,28 @@ await scenario('launch script: saved once, it runs in a terminal tab of its own 
 })
 
 await scenario('settings: switching a feature off restores the harness interaction at once', async () => {
-  const terminalSwitch = page.getByRole('switch', { name: '会话顶部的终端按钮' })
-  const filesSwitch = page.getByRole('switch', { name: '右侧栏默认打开工作区文件' })
-  const terminalButton = page.getByRole('button', { name: '切换终端' })
+  const terminalSwitch = page.getByRole('switch', { name: 'Terminal button in session header' })
+  const filesSwitch = page.getByRole('switch', { name: 'Open workspace files by default' })
+  const terminalButton = page.getByRole('button', { name: 'Toggle terminal' })
   const openSettings = async () => {
     await openCcguiSettings()
-    // The page opens on its CLI 列表 tab; the feature switches live on the next one.
-    await page.getByRole('tab', { name: '界面交互' }).click()
+    // The page opens on its CLI List tab; the feature switches live on the next one.
+    await page.getByRole('tab', { name: 'Interface' }).click()
     await until(() => terminalSwitch.isVisible(), 'settings page')
   }
   await openSettings()
   await shot('settings-page')
-  await page.getByRole('tab', { name: '更多功能' }).click()
-  await until(() => page.getByText('即将开放…').first().isVisible(), 'upcoming features')
+  await page.getByRole('tab', { name: 'More Features' }).click()
+  await until(() => page.getByText('Coming soon…').first().isVisible(), 'upcoming features')
   await shot('settings-more')
-  await page.getByRole('tab', { name: '版本记录' }).click()
+  await page.getByRole('tab', { name: 'Release Notes' }).click()
   const notesCount = page.locator('.dsh-ccgui-notes-count')
   await until(() => notesCount.isVisible(), 'release notes page')
   const firstPage = (await notesCount.textContent()) ?? ''
-  await page.getByRole('button', { name: '下一页' }).click()
+  await page.getByRole('button', { name: 'Next page' }).click()
   await until(async () => (await notesCount.textContent()) !== firstPage, 'the pager turned the page')
   await shot('settings-notes')
-  await page.getByRole('tab', { name: '界面交互' }).click()
+  await page.getByRole('tab', { name: 'Interface' }).click()
   await until(() => terminalSwitch.isVisible(), 'settings page')
   await terminalSwitch.click()
   await filesSwitch.click()
@@ -578,7 +593,7 @@ await scenario('settings: switching a feature off restores the harness interacti
   await newCliSession(FAKE)
   await send('SETTINGS OFF')
   await idle('SETTINGS OFF')
-  await until(() => page.getByRole('button', { name: '启动脚本' }).isVisible(), 'session header')
+  await until(() => page.getByRole('button', { name: 'Startup scripts' }).isVisible(), 'session header')
   if (await terminalButton.isVisible()) throw new Error('the terminal button is still in the header')
   await page.getByRole('button', { name: '打开右侧边栏' }).click()
   await until(
@@ -598,7 +613,7 @@ await scenario('settings: switching a feature off restores the harness interacti
 })
 
 await scenario('settings: the CLI list orders the switcher and hides what is switched off', async () => {
-  const missingSwitch = page.getByRole('switch', { name: '启用 Missing CLI' })
+  const missingSwitch = page.getByRole('switch', { name: 'Enable Missing CLI' })
   const rows = () =>
     page.locator('.dsh-ccgui-cli-prefs li').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label')))
   // CLIs can start switched off (CodeBuddy does), so the menu is what the switches leave on.
@@ -625,7 +640,7 @@ await scenario('settings: the CLI list orders the switcher and hides what is swi
   await openSettings()
   const before = await rows()
   const lastName = before.at(-1)
-  await page.getByRole('button', { name: `上移 ${lastName}` }).click()
+  await page.getByRole('button', { name: `Move ${lastName} up` }).click()
   await missingSwitch.click()
   const arranged = await rows()
   if (arranged.at(-2) !== lastName) throw new Error(`rows after moving: ${arranged.join()}`)
@@ -645,7 +660,7 @@ await scenario('settings: the CLI list orders the switcher and hides what is swi
     await page.keyboard.press('Escape')
     await openSettings()
     await missingSwitch.click()
-    await page.getByRole('button', { name: `下移 ${lastName}` }).click()
+    await page.getByRole('button', { name: `Move ${lastName} down` }).click()
     restored = await rows()
     // Closed even when the check above failed, so the next scenario is not stuck behind the dialog.
     await closeSettings()

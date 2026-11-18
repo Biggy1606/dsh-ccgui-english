@@ -15,15 +15,15 @@ Requires DSH `>=0.2.2-rc.1 <0.3.0` and a working, authenticated CLI. Install `op
 
 1. In DSH, open **Plugins**, choose **Add plugin**, enter `dsh-ccgui`, and install it.
 2. If instructed to restart DSH, quit it completely and reopen it rather than choosing immediate activation; otherwise old and new code may be mixed in one process.
-3. Start a new session, select **OpenCode** from the CLI menu beside the composer, and send a message. Its available models appear in the model menu once the CLI has started. Choose the CLI before the first message; to switch CLIs, start another session.
+3. Start a session, select **OpenCode** from the CLI menu beside the composer, and send a message. Its available models appear in the model menu once the CLI has started. The model menu lists every provider the deployment offers, so the same menu moves the session to another CLI or back to a DSH provider. A CLI that starts after the conversation began does not receive the earlier messages; when DSH has a visible compaction summary, it is sent to the CLI as background.
 
 Alternatively, install via the appropriate profile:
 
 ```sh
 # macOS desktop: quit the app completely first
-"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add dsh-ccgui@1.0.2
+"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add dsh-ccgui@1.0.6
 # DSH web
-dsh plugin --profile web add dsh-ccgui@1.0.2
+dsh plugin --profile web add dsh-ccgui@1.0.6
 ```
 
 Replace `add ...` with `remove dsh-ccgui` to uninstall. To install from a local checkout, run `pnpm install && pnpm run build`, then provide the checkout path in **Add plugin** or instead of the package name in the command above. Peer dependency warnings from pnpm can be ignored.
@@ -32,7 +32,7 @@ The included Claude, Kimi, Codex and PI adapters are fetched with `npx`; OMP, Op
 
 ## Configuration
 
-**CC GUI Settings** in DSH settings controls CLI visibility and ordering and can disable individual interface additions. Settings are stored in the browser. Open a session first to populate the CLI list. DeepSeek remains available and cannot be disabled. The plugin also offers a changes panel, launch scripts, worktree creation, workspace file actions and session status indicators.
+**CC GUI Settings** in DSH settings controls CLI visibility and ordering and can disable individual interface additions. Settings are stored in the browser. Open a session first to populate the CLI list. DeepSeek remains available and cannot be disabled. In a CLI session's model menu, star models to keep them at the top of their own group. In DSH's native model menu, add the current model to favorites and select saved favorites from the shortcuts below its settings. Favorites are stored in the browser. A favorite missing from the catalog remains visible so it can be removed. The plugin also offers a changes panel, launch scripts, worktree creation, workspace file actions and session status indicators.
 
 To customize agents, add a `ccgui` entry to the profile's `cordis.patch.yml`. The `agents` list replaces the defaults, so retain every default you want to use:
 
@@ -54,7 +54,7 @@ To customize agents, add a `ccgui` entry to the profile's `cordis.patch.yml`. Th
 
 Pin versions for `npx` adapters. Agent `env` can supply CLI-specific environment variables; DSH removes inherited variables whose names contain `KEY`, `PASSWORD`, `SECRET`, or `TOKEN` when starting a CLI. Set any needed credentials in the agent's `env`, not in this document. `startTimeoutMs` defaults to 120 seconds; a first adapter download may require longer. On macOS, a Dock-launched app may have a different PATH from your shell; an agent's explicit `env.PATH` takes precedence.
 
-The CLI mode menu shows modes reported by the CLI over ACP, not DSH permission presets. Mode changes apply immediately to a running process, or with the next message if it has not started. A rejected change is reported and is not retried automatically. Model changes within a CLI apply on the next message. The default model label is probed from user-level settings and may differ from a project-specific configuration, although the CLI still uses its own settings.
+The CLI mode menu shows modes reported by the CLI over ACP, not DSH permission presets. Mode changes apply immediately to a running process, or with the next message if it has not started. A rejected change is reported and is not retried automatically. A model change applies to the next request; a running turn keeps the model it started with. The model menu and `/model` share one catalog and both list the DSH providers and every CLI, so either surface can move the session between them. Provider headings stay visible while the list scrolls, matching the harness's own menu. A CLI that starts mid-session does not replay the earlier conversation, but receives the latest visible DSH compaction summary when available. The default model label is probed from user-level settings and may differ from a project-specific configuration, although the CLI still uses its own settings.
 
 ## Permissions and stopping
 
@@ -73,9 +73,9 @@ In the original author's single-machine default-configuration tests, OpenCode st
 ## Limitations and troubleshooting
 
 - `/compact`, fork, rollback and interrupting a running turn are unsupported; messages sent during a turn are queued. Failed messages are not automatically resent.
-- Text, user-authored messages and scheduled tasks are forwarded; images and DSH's internal reminders are not. CLI context is managed by the CLI, not DSH compression. Token speed and usage are not displayed because ACP usage figures are not directly comparable.
+- User messages, scheduled tasks, agent relays and selected DSH context injections are forwarded to the CLI. A fresh CLI also receives the latest visible DSH compaction summary, if present; this can disclose earlier conversation content to that CLI's provider. The CLI still manages its own context. Token speed and usage are not displayed because ACP usage figures are not directly comparable.
 - Each open CLI session has its own process. A first model lookup may launch a temporary CLI session; an `npx` adapter may need to download first. An unavailable CLI can still appear in the menu but fails to start when used.
-- Avoid using `/model` to switch between a CLI and a native DSH provider in one session: the CLI lacks the earlier context and switching out can cause summary failures. Changing models within a CLI is supported.
+- Switching between a CLI and a native DSH provider in an existing session is supported through the model menu and `/model`. The new CLI starts without the full earlier conversation; it receives the latest visible DSH summary if one exists. Switching out of a CLI can also trigger DSH compaction on history that CLI never read. Changing models within a CLI is safe; test cross-provider switching for your workflow.
 - In PTC mode each CLI tool call is wrapped in `run_code`; its runtime timeout includes approval time and may cancel long operations. Use standard mode for long builds or tests or if the PTC runtime cannot accept the wrapper.
 - Kimi's pinned npm package requires Node.js 22.19 or later and a prior `/login`. CLI errors can contain paths and appear in the session log. CLI subscription use in third-party tools is subject to the respective provider's terms.
 

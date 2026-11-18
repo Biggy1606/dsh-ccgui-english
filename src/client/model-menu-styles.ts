@@ -4,8 +4,6 @@
  * @module dsh-ccgui/client/model-menu-styles
  */
 
-import { CLI_ROUTE_PREFIX } from '../constants.ts'
-
 export const ROOT_CLASS = 'dsh-cli-model'
 export const TRIGGER_CLASS = 'dsh-cli-model-trigger'
 export const ICON_CLASS = 'dsh-cli-model-icon'
@@ -16,13 +14,14 @@ export const SEARCH_CLASS = 'dsh-cli-model-search'
 export const SEARCH_INPUT_CLASS = 'dsh-cli-model-search-input'
 export const ROWS_CLASS = 'dsh-cli-model-rows'
 export const ROW_CLASS = 'dsh-cli-model-row'
+export const ROW_WRAPPER_CLASS = 'dsh-cli-model-row-wrapper'
+export const ROW_FAVORITE_CLASS = 'dsh-cli-model-row-favorite'
 export const ROW_ACTIVE_CLASS = 'dsh-cli-model-row-active'
 export const ROW_MARK_CLASS = 'dsh-cli-model-row-mark'
 export const ROW_NAME_CLASS = 'dsh-cli-model-row-name'
 export const ROW_DESCRIPTION_CLASS = 'dsh-cli-model-row-description'
 export const ROW_CHECK_CLASS = 'dsh-cli-model-row-check'
 export const HINT_CLASS = 'dsh-cli-model-hint'
-export const HEADING_CLASS = 'dsh-cli-model-heading'
 export const GROUP_CLASS = 'dsh-cli-model-group'
 export const EFFORT_CLASS = 'dsh-cli-model-effort'
 export const MODE_CLASS = 'dsh-cli-model-mode'
@@ -35,15 +34,10 @@ export const MODE_SEAT_CLASS = 'dsh-cli-mode-seat'
 // live in its menu, such as the agent-team toggle. If the harness changes its markup both
 // controls show, and either still works.
 //
-// That native seat reads one global catalog, so it also lists every CLI even though a session
-// the harness runs cannot move to one. The next rule hides just those groups, keyed by the
-// provider id the harness puts on every model row (cli-..., the same prefix the routes use).
-// Its own providers (deepseek-account, deepseek-official) and the settings in the menu are
-// left alone. The plugin's own menu uses div[role="none"] rows with no provider id and its
-// rows live under .dsh-cli-model-rows, so neither is matched. If the harness drops the
-// attribute the groups simply show again; nothing else breaks.
+// The native seat reads the same global catalog the plugin's menu does, and both now list
+// every provider: the plugin no longer hides CLI groups there, because moving between a CLI
+// and the harness is a supported selection on either surface.
 export const MODEL_MENU_STYLES = `
-[role="menu"][aria-label="模型"]:not(.${ROWS_CLASS}) section[data-menu-group]:has([data-provider-id^="${CLI_ROUTE_PREFIX}"]) { display: none !important; }
 [data-slot="conversation.input.right"]:has(.${ROOT_CLASS}) + [data-slot="conversation.input.model"] { display: none !important; }
 .${ROOT_CLASS} { position: relative; min-width: 0; }
 .${TRIGGER_CLASS} {
@@ -124,13 +118,30 @@ export const MODEL_MENU_STYLES = `
   .${SEARCH_CLASS} .${SEARCH_INPUT_CLASS} input { font-size: 16px; }
 }
 .${ROWS_CLASS} { min-height: 0; overflow-x: hidden; overflow-y: auto; }
+.${ROW_WRAPPER_CLASS} { display: flex; align-items: center; min-width: 0; }
+.${ROW_FAVORITE_CLASS} {
+  flex: 0 0 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--dsw-radius-md);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 18px;
+  cursor: pointer;
+}
+.${ROW_FAVORITE_CLASS}:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.${ROW_FAVORITE_CLASS}:focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); }
 .${ROW_CLASS} {
   box-sizing: border-box;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
   min-height: 34px;
+  /* Keep the highlighted row clear of the sticky provider heading. */
+  scroll-margin-top: 24px;
   padding: 5px 7px;
   border: none;
   border-radius: var(--dsw-radius-md);
@@ -165,13 +176,6 @@ export const MODEL_MENU_STYLES = `
 }
 .${ROW_CHECK_CLASS} { display: grid; place-items: center; flex: 0 0 14px; color: var(--dsw-alias-label-primary); }
 .${ROW_CHECK_CLASS} svg { width: 14px; height: 14px; }
-.${HEADING_CLASS} {
-  padding: 6px 7px 2px;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 18px;
-}
 .${GROUP_CLASS} { display: flex; align-items: center; min-width: 0; }
 /* Where the composer is too narrow for the model's name, the level gives way as well. */
 .${EFFORT_CLASS} { display: var(--dsh-composer-model-text-display, block); flex: 0 0 auto; }
@@ -184,6 +188,7 @@ export const MODEL_MENU_STYLES = `
    a CLI that reports no modes leaves the seat empty, and the access control must then stay. */
 .${MODE_SEAT_CLASS} { display: inline-flex; min-width: 0; }
 .${MODE_SEAT_CLASS} .${TRIGGER_CLASS} { padding: 0 4px 0 8px; color: var(--dsw-alias-label-secondary); }
+[data-composer-card]:has(.${MODE_CLASS}) [data-slot="conversation.input.permission"],
 [data-composer-card]:has(.${MODE_CLASS}) [aria-label^="访问模式"] { display: none !important; }
 .${HINT_CLASS} { padding: 8px; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 18px; }
 `

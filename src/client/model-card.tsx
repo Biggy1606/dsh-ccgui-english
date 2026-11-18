@@ -6,8 +6,16 @@
  * @module dsh-ccgui/client/model-card
  */
 
+import { useEffect, useRef } from 'react'
 import type { CSSProperties, ReactElement, RefObject } from 'react'
-import { IconCheckOutlineRegular, Input, MenuSurface, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import {
+  IconCheckOutlineRegular,
+  Input,
+  MenuGroup,
+  MenuSurface,
+  observeStickyMenuGroups,
+  StateDot,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { compactDescription } from '../constants.ts'
 import type { DirectorySelection } from './choices.ts'
 import { MarkGlyph } from './marks.tsx'
@@ -15,7 +23,6 @@ import { isRow, rowCount } from './menu-models.ts'
 import type { MenuModels, MenuRow, MenuSection } from './menu-models.ts'
 import { modelMarkOf } from './model-marks.ts'
 import {
-  HEADING_CLASS,
   HINT_CLASS,
   MENU_CLASS,
   ROW_ACTIVE_CLASS,
@@ -25,6 +32,8 @@ import {
   ROW_DESCRIPTION_CLASS,
   ROW_NAME_CLASS,
   ROWS_CLASS,
+  ROW_WRAPPER_CLASS,
+  ROW_FAVORITE_CLASS,
   SEARCH_CLASS,
   SEARCH_INPUT_CLASS,
 } from './model-menu-styles.ts'
@@ -32,6 +41,7 @@ import {
 /** The harness's seat offers search from the same size, so the two menus agree. */
 export const SEARCH_ABOVE = 4
 const MENU_LABEL = 'Models'
+const SELECTION_LABEL = 'Model selection'
 const SEARCH_LABEL = 'Search models…'
 const NO_MATCH_LABEL = 'No matching models.'
 const NO_MODELS_LABEL = 'No models available'
@@ -44,38 +54,89 @@ interface ModelRowProps {
   readonly settling: boolean
   readonly active: boolean
   readonly busy: boolean
+  readonly favorite: boolean | undefined
+  readonly unavailable: boolean
   readonly onHover: () => void
   readonly onChoose: () => void
+  readonly onToggleFavorite: () => void
 }
 
-function ModelRow({ domId, model, selected, settling, active, busy, onHover, onChoose }: ModelRowProps): ReactElement {
+function FavoriteButton({
+  model,
+  favorite,
+  onToggleFavorite,
+}: Pick<ModelRowProps, 'model' | 'favorite' | 'onToggleFavorite'>): ReactElement | null {
+  if (favorite === undefined) return null
+  return (
+    <button
+      type="button"
+      className={ROW_FAVORITE_CLASS}
+      aria-label={`${favorite ? 'Remove' : 'Add'} ${model.name} ${favorite ? 'from' : 'to'} favorites`}
+      aria-pressed={favorite}
+      onClick={(event) => {
+        const button = event.currentTarget
+        const card = button.closest('[aria-label="Model selection"]')
+        const search = card?.querySelector<HTMLInputElement>('input')
+        const trigger = Array.from(document.querySelectorAll<HTMLButtonElement>('[aria-controls]')).find(
+          (item) => item.getAttribute('aria-controls') === card?.id,
+        )
+        onToggleFavorite()
+        queueMicrotask(() => {
+          if (!button.isConnected) (search?.isConnected === true ? search : trigger)?.focus()
+        })
+      }}
+    >
+      {favorite ? '★' : '☆'}
+    </button>
+  )
+}
+
+function ModelRow({
+  domId,
+  model,
+  selected,
+  settling,
+  active,
+  busy,
+  favorite,
+  unavailable,
+  onHover,
+  onChoose,
+  onToggleFavorite,
+}: ModelRowProps): ReactElement {
   const check = selected ? <IconCheckOutlineRegular /> : null
   const mark = modelMarkOf(model)
   // Prose would crowd the row and push the check mark aside; see compactDescription.
   const detail = compactDescription(model.description)
   return (
-    <button
-      type="button"
-      role="menuitemradio"
-      aria-checked={selected}
-      id={domId}
-      tabIndex={-1}
-      title={model.name}
-      className={active ? `${ROW_CLASS} ${ROW_ACTIVE_CLASS}` : ROW_CLASS}
-      disabled={busy}
-      onMouseMove={active || busy ? undefined : onHover}
-      onClick={onChoose}
-    >
-      {/* The slot stays when there is no mark, so every name starts at the same place. */}
-      <span className={ROW_MARK_CLASS}>{mark === undefined ? null : <MarkGlyph id={mark} size={ROW_MARK_SIZE} />}</span>
-      <span className={ROW_NAME_CLASS}>{model.name}</span>
-      {detail !== undefined && (
-        <span className={ROW_DESCRIPTION_CLASS} title={detail}>
-          {detail}
+    <div className={ROW_WRAPPER_CLASS}>
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={selected}
+        id={domId}
+        tabIndex={-1}
+        title={model.name}
+        className={active ? `${ROW_CLASS} ${ROW_ACTIVE_CLASS}` : ROW_CLASS}
+        disabled={busy || unavailable}
+        onMouseMove={active || busy ? undefined : onHover}
+        onClick={onChoose}
+      >
+        {/* The slot stays when there is no mark, so every name starts at the same place. */}
+        <span className={ROW_MARK_CLASS}>
+          {mark === undefined ? null : <MarkGlyph id={mark} size={ROW_MARK_SIZE} />}
         </span>
-      )}
-      <span className={ROW_CHECK_CLASS}>{settling ? <StateDot state="ongoing" /> : check}</span>
-    </button>
+        <span className={ROW_NAME_CLASS}>{model.name}</span>
+        {detail !== undefined && (
+          <span className={ROW_DESCRIPTION_CLASS} title={detail}>
+            {detail}
+          </span>
+        )}
+        {unavailable && <span className={ROW_DESCRIPTION_CLASS}>Unavailable</span>}
+        <span className={ROW_CHECK_CLASS}>{settling ? <StateDot state="ongoing" /> : check}</span>
+      </button>
+      <FavoriteButton model={model} favorite={favorite} onToggleFavorite={onToggleFavorite} />
+    </div>
   )
 }
 
@@ -93,6 +154,9 @@ export interface ModelCardProps {
   readonly onQuery: (query: string) => void
   readonly onHighlight: (index: number) => void
   readonly onChoose: (row: MenuRow) => void
+  readonly isFavorite?: (row: MenuRow) => boolean | undefined
+  readonly isUnavailable?: (row: MenuRow) => boolean
+  readonly onToggleFavorite?: (row: MenuRow) => void
 }
 
 interface ModelSearchProps {
@@ -128,42 +192,86 @@ function ModelSearch({ id, active, query, busy, searchRef, onQuery }: ModelSearc
 
 type ModelRowsProps = Pick<
   ModelCardProps,
-  'id' | 'models' | 'sections' | 'active' | 'pending' | 'onHighlight' | 'onChoose'
+  | 'id'
+  | 'models'
+  | 'sections'
+  | 'active'
+  | 'pending'
+  | 'onHighlight'
+  | 'onChoose'
+  | 'isFavorite'
+  | 'isUnavailable'
+  | 'onToggleFavorite'
 >
 
-/** Indexes run across the sections, so the highlight and the arrows ignore the headings. */
-function ModelRows({ id, models, sections, active, pending, onHighlight, onChoose }: ModelRowsProps): ReactElement {
-  const starts = sections.map((_section, index) => rowCount(sections.slice(0, index)))
+function ModelSection(props: ModelRowsProps & { readonly section: MenuSection; readonly start: number }): ReactElement {
+  const {
+    id,
+    models,
+    active,
+    pending,
+    onHighlight,
+    onChoose,
+    isFavorite,
+    isUnavailable,
+    onToggleFavorite,
+    section,
+    start,
+  } = props
   return (
-    <div id={`${id}-rows`} className={`${ROWS_CLASS} scrollable`} role="menu" aria-label={MENU_LABEL}>
-      {sections.map((section, sectionIndex) => (
-        <div key={section.id} role="none">
-          {section.headed && (
-            <div className={HEADING_CLASS} role="presentation">
-              {section.name}
-            </div>
-          )}
-          {section.rows.map((row, rowIndex) => {
-            const index = (starts[sectionIndex] ?? 0) + rowIndex
-            return (
-              <ModelRow
-                key={`${row.provider}/${row.model}`}
-                domId={`${id}-model-${index}`}
-                model={row}
-                selected={isRow(row, models.current)}
-                settling={isRow(row, pending)}
-                active={index === active}
-                busy={pending !== null}
-                onHover={() => {
-                  onHighlight(index)
-                }}
-                onChoose={() => {
-                  onChoose(row)
-                }}
-              />
-            )
-          })}
-        </div>
+    <MenuGroup label={section.name}>
+      {section.rows.map((row, rowIndex) => {
+        const index = start + rowIndex
+        return (
+          <ModelRow
+            key={`${row.provider}/${row.model}`}
+            domId={`${id}-model-${index}`}
+            model={row}
+            selected={isRow(row, models.current)}
+            settling={isRow(row, pending)}
+            active={index === active}
+            busy={pending !== null}
+            favorite={onToggleFavorite === undefined ? undefined : isFavorite?.(row)}
+            unavailable={isUnavailable?.(row) ?? false}
+            onToggleFavorite={() => {
+              onToggleFavorite?.(row)
+            }}
+            onHover={() => {
+              onHighlight(index)
+            }}
+            onChoose={() => {
+              onChoose(row)
+            }}
+          />
+        )
+      })}
+    </MenuGroup>
+  )
+}
+
+/** Indexes run across the sections, so the highlight and the arrows ignore the headings. */
+function ModelRows(props: ModelRowsProps): ReactElement {
+  const { id, sections } = props
+  const starts = sections.map((_section, index) => rowCount(sections.slice(0, index)))
+  const viewportRef = useRef<HTMLDivElement>(null)
+  // MenuGroup keeps its heading visible; the host observer adds the pinned background only
+  // while a heading actually crosses the scrolling row area.
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (viewport === null) return
+    return observeStickyMenuGroups(viewport)
+  }, [sections])
+  return (
+    <div
+      ref={viewportRef}
+      id={`${id}-rows`}
+      className={`${ROWS_CLASS} scrollable`}
+      role="menu"
+      aria-label={MENU_LABEL}
+      hidden={sections.length === 0}
+    >
+      {sections.map((section, index) => (
+        <ModelSection key={section.id} {...props} section={section} start={starts[index] ?? 0} />
       ))}
     </div>
   )
@@ -179,20 +287,7 @@ function emptyLabel(models: MenuModels): string {
  * @returns the menu surface.
  */
 export function ModelCard(props: ModelCardProps): ReactElement {
-  const {
-    id,
-    models,
-    sections,
-    active,
-    pending,
-    query,
-    anchorStyle,
-    cardRef,
-    searchRef,
-    onQuery,
-    onHighlight,
-    onChoose,
-  } = props
+  const { id, models, sections, active, pending, query, anchorStyle, cardRef, searchRef, onQuery } = props
   const busy = pending !== null
   return (
     <MenuSurface
@@ -201,12 +296,12 @@ export function ModelCard(props: ModelCardProps): ReactElement {
       className={MENU_CLASS}
       style={anchorStyle}
       role="group"
-      aria-label={models.label}
+      aria-label={SELECTION_LABEL}
     >
       {rowCount(models.sections) > SEARCH_ABOVE && (
         <ModelSearch id={id} active={active} query={query} busy={busy} searchRef={searchRef} onQuery={onQuery} />
       )}
-      <ModelRows {...{ id, models, sections, active, pending, onHighlight, onChoose }} />
+      <ModelRows {...props} />
       {sections.length === 0 && (
         <div className={HINT_CLASS} role="status">
           {emptyLabel(models)}

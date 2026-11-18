@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { LlmError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { CliBridgeAdapter, DEFAULT_MODEL_ID } from '../src/adapter.ts'
+import { nativeReplayState } from '../src/request-input.ts'
 import type { CliSession } from '../src/cli-session.ts'
 import type { PtcWrap } from '../src/session/ptc-call.ts'
 
@@ -9,14 +10,19 @@ const FINISH: StreamChunk = { type: 'finish', reason: { kind: 'stop' } }
 const LEVELS = { efforts: [{ id: ReasoningEffortId('high'), name: 'High' }], defaultEffort: ReasoningEffortId('high') }
 const CURRENT_TURN: ReadonlySet<string> = new Set(['m1'])
 
-function setup(ptcWrapFor: (provider: string, sessionId: string) => PtcWrap | undefined = () => undefined) {
+function setup(
+  ptcWrapFor: (provider: string, sessionId: string) => PtcWrap | undefined = () => undefined,
+  chunks: readonly StreamChunk[] = [FINISH],
+) {
   const stream = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
-    yield FINISH
+    yield* chunks
   })
   const auxiliaryStream = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
     yield FINISH
   })
-  const resolveSession = vi.fn((_provider: string, _sessionId: string) => ({ stream }) as unknown as CliSession)
+  const resolveSession = vi.fn(
+    (_provider: string, _sessionId: string) => ({ provider: 'cli-x', stream }) as unknown as CliSession,
+  )
   const adapter = new CliBridgeAdapter({
     labelFor: (provider) => (provider === 'cli-x' ? 'X CLI' : undefined),
     resolveSession,
@@ -112,6 +118,14 @@ describe('CliBridgeAdapter.stream', () => {
     const { adapter, stream } = setup(() => ({ timeoutMs: 600_000 }))
     await collect(adapter.stream(request()))
     expect(stream).toHaveBeenCalledWith(expect.objectContaining({ ptc: { timeoutMs: 600_000 } }))
+  })
+
+  it('drops replay state when a pinned turn is served by another CLI', async () => {
+    const replay = nativeReplayState('acp-1', 'dsh-1')
+    const { adapter } = setup(undefined, [{ type: 'finish', reason: { kind: 'stop' }, replayState: replay }])
+    await expect(collect(adapter.stream(request({ provider: 'cli-y' })))).resolves.toEqual([
+      { type: 'finish', reason: { kind: 'stop' } },
+    ])
   })
 
   // Checked before the session is resolved, so a CLI that cannot run here is never started.

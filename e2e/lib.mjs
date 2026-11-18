@@ -79,7 +79,7 @@ export async function openHarness() {
     await sleep(500)
   }
 
-  const cliSwitcher = () => page.getByRole('button', { name: '切换 CLI' })
+  const cliSwitcher = () => page.getByRole('button', { name: 'Switch CLI' })
 
   /** Put the open session on a CLI with the composer's switcher. */
   async function chooseCli(name) {
@@ -101,11 +101,23 @@ export async function openHarness() {
     await chooseCli(name)
   }
 
-  const modelTrigger = () => page.getByRole('button', { name: /^(选择模型|请选择模型)/ }).last()
+  const modelTrigger = () =>
+    page.getByRole('button', { name: /^(Select model, current:|Select a model|Loading models…)/ }).last()
+
+  /**
+   * A harness session renders no plugin control and keeps its native seat, whose label the
+   * host localizes; the model list opens from whichever trigger the session actually has.
+   */
+  async function visibleModelTrigger() {
+    const pluginTrigger = modelTrigger()
+    const pluginShown = await pluginTrigger.isVisible().catch(() => false)
+    return pluginShown ? pluginTrigger : page.getByRole('button', { name: /^(选择模型|请选择模型)/ }).last()
+  }
 
   /** Escape only steps back a level in this menu, so repeat until it has closed. */
   async function closeModelMenu() {
-    for (let i = 0; i < 3 && (await modelTrigger().getAttribute('aria-expanded')) === 'true'; i += 1) {
+    const trigger = await visibleModelTrigger()
+    for (let i = 0; i < 3 && (await trigger.getAttribute('aria-expanded')) === 'true'; i += 1) {
       await page.keyboard.press('Escape')
       await sleep(250)
     }
@@ -113,7 +125,8 @@ export async function openHarness() {
 
   async function openModelList() {
     await closeModelMenu()
-    await modelTrigger().click()
+    const trigger = await visibleModelTrigger()
+    await trigger.click()
     await sleep(300)
     const drill = page.getByRole('menuitem', { name: /^模型/ }).first()
     if (await drill.isVisible().catch(() => false)) await drill.click()
@@ -171,7 +184,7 @@ export async function openHarness() {
       await page.getByRole('menuitem', { name: /^设置/ }).click()
       await until(() => settingsDialog().isVisible(), 'settings dialog')
     }
-    await settingsDialog().getByRole('button', { name: 'CC GUI 设置' }).click()
+    await settingsDialog().getByRole('button', { name: 'CC GUI Settings' }).click()
   }
 
   async function closeSettings() {

@@ -1,12 +1,12 @@
 /**
- * What the composer's model control lists on a CLI session: that CLI's own models. The
- * harness-provider branch is still derived here, so callers such as the mode seat can resolve
- * the current selection, but a session the harness runs no longer renders this menu: it keeps
- * its native model seat, which also carries settings such as the agent-team toggle. The
- * harness's own seat lists every provider in its one global catalog and offers no way to
- * narrow it per session, which is why a CLI session needs a control of its own. On a harness
- * session a style rule hides just that catalog's CLI groups (see model-menu-styles.ts), so
- * the native seat keeps its own providers and settings without offering a move it cannot make.
+ * What the composer's model control lists on a CLI session: every provider the catalog
+ * offers, so the session can move to another CLI or back to the harness from the same list.
+ * The current CLI comes first and keeps its vendor headings; every other provider follows
+ * as one section.
+ * A session the harness runs keeps its native model seat instead (see model-menu.tsx),
+ * because that seat also carries settings such as the agent-team toggle. The
+ * harness-provider branch below still derives the current selection for callers such as
+ * the mode seat.
  * @module dsh-ccgui/client/menu-models
  */
 
@@ -25,7 +25,9 @@ const PROVIDER_DEFAULT_KEY = 'provider-default'
 const LOADING_STATUS = 'loading'
 /** Splits a CLI model id such as `deepseek/deepseek-flash` into its vendor and the rest. */
 const VENDOR_SEPARATOR = '/'
-/** Fewer vendors than this leave a CLI's list whole, as one heading would only repeat the CLI. */
+/** Joins a provider and a vendor in one section heading. */
+const SECTION_SEPARATOR = ' · '
+/** Fewer vendors than this leave a CLI's list whole; splitting would add a heading per vendor. */
 const MIN_VENDOR_SECTIONS = 2
 
 /** One model row, which only the provider and the model id together identify. */
@@ -42,8 +44,6 @@ export interface MenuRow {
 export interface MenuSection {
   readonly id: string
   readonly name: string
-  /** Whether the section shows its name above its rows. */
-  readonly headed: boolean
   readonly rows: readonly MenuRow[]
 }
 
@@ -91,11 +91,10 @@ export function rowCount(sections: readonly MenuSection[]): number {
   return sections.reduce((count, section) => count + section.rows.length, 0)
 }
 
-function toSection({ id, name, models }: DirectoryGroup, headed: boolean): MenuSection {
+function toSection({ id, name, models }: DirectoryGroup): MenuSection {
   return {
     id,
     name: id === ACCOUNT_PROVIDER_ID ? ACCOUNT_PROVIDER_NAME : name,
-    headed,
     rows: models.map(({ id: model, name: modelName, description, reasoning }) => ({
       provider: id,
       model,
@@ -125,7 +124,8 @@ function vendorOf(row: MenuRow): string | undefined {
  * ACP has no field saying which vendor a CLI model comes from, and OMP, PI and OpenCode list
  * several vendors in one flat list. Their ids carry it as a `vendor/` prefix, so a list with
  * more than one prefix is shown under one heading per vendor, the way those CLIs show it.
- * Rows without a prefix, the default entry among them, stay on top without a heading.
+ * Rows without a prefix, the default entry among them, stay on top under the provider
+ * heading; vendor headings carry the provider too, so a sticky heading still says which CLI.
  */
 function vendorSections(section: MenuSection): readonly MenuSection[] {
   const vendors = [...new Set(section.rows.flatMap((row) => vendorOf(row) ?? []))]
@@ -136,8 +136,7 @@ function vendorSections(section: MenuSection): readonly MenuSection[] {
     ...lead,
     ...vendors.map((vendor) => ({
       id: `${section.id}${VENDOR_SEPARATOR}${vendor}`,
-      name: vendor,
-      headed: true,
+      name: `${section.name}${SECTION_SEPARATOR}${vendor}`,
       rows: section.rows.filter((row) => vendorOf(row) === vendor),
     })),
   ]
@@ -147,15 +146,19 @@ type Listing = Pick<MenuModels, 'label' | 'sections' | 'unlisted'>
 
 function listing(state: DirectoryState): Listing {
   const cli = cliModels(state)
-  if (cli !== undefined) {
-    const section = toSection({ id: cli.provider, name: cli.name, models: cli.rows }, false)
-    return { label: cli.name, sections: vendorSections(section), unlisted: cli.listed ? undefined : cli.name }
-  }
-  const sections = state.groups
-    .filter((group) => !group.id.startsWith(CLI_ROUTE_PREFIX))
-    .map((group) => toSection(group, true))
+  // A session on a CLI can move to any provider the catalog lists, so its menu offers every
+  // group; that is what makes switching CLIs and moving back to the harness one control.
+  const onCli = state.current?.provider.startsWith(CLI_ROUTE_PREFIX) ?? false
+  // The current CLI comes first; its group heading and the vendor headings keep the
+  // provider visible while the list scrolls. Every other provider follows as one group,
+  // so another CLI or the harness is one pick away.
+  const active = onCli ? state.groups.find((group) => group.id === cli?.provider) : undefined
+  const rest = state.groups
+    .filter((group) => (onCli ? group.id !== active?.id : !group.id.startsWith(CLI_ROUTE_PREFIX)))
     .sort((left, right) => providerRank(left.id) - providerRank(right.id))
-  return { label: MENU_LABEL, sections, unlisted: undefined }
+    .map((group) => toSection(group))
+  const sections = active === undefined ? rest : [...vendorSections(toSection(active)), ...rest]
+  return { label: MENU_LABEL, sections, unlisted: cli?.listed === false ? cli.name : undefined }
 }
 
 /**

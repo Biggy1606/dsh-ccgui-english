@@ -13,8 +13,10 @@ import type { DirectorySelection } from './choices.ts'
 import { isRow, rowCount } from './menu-models.ts'
 import type { MenuModels, MenuRow, MenuSection } from './menu-models.ts'
 import { SEARCH_ABOVE } from './model-card.tsx'
+import { ROW_FAVORITE_CLASS } from './model-menu-styles.ts'
 
 const UNKNOWN_ERROR_LABEL = 'Unknown error'
+const NATIVE_MODEL_SEAT = '[data-slot="conversation.input.model"] button'
 
 /** Asks the host to move the session to another model. */
 export type SelectModel = (selection: DirectorySelection) => Promise<{ error?: { message?: string } }>
@@ -43,8 +45,13 @@ function useCloseOnOutsidePress(open: boolean, inside: readonly RefObject<HTMLEl
   }, [open])
 }
 
+interface Highlight {
+  readonly row: MenuRow | undefined
+  readonly query: string
+}
+
 /** Search ranks within each provider, as the harness's menu does, and drops emptied sections. */
-function useMatchingRows(models: MenuModels, query: string, highlight: number | null) {
+function useMatchingRows(models: MenuModels, query: string, highlight: Highlight | null) {
   const searchable = rowCount(models.sections) > SEARCH_ABOVE
   const sections: readonly MenuSection[] = useMemo(
     () =>
@@ -55,7 +62,12 @@ function useMatchingRows(models: MenuModels, query: string, highlight: number | 
   )
   const visible = useMemo(() => sections.flatMap((section) => section.rows), [sections])
   const currentIndex = visible.findIndex((row) => isRow(row, models.current))
-  const active = Math.min(highlight ?? Math.max(0, currentIndex), visible.length - 1)
+  const highlightIndex = visible.findIndex((row) => isRow(row, highlight?.row))
+  const initial = highlight !== null && highlight.query !== query ? 0 : Math.max(0, currentIndex)
+  const active = Math.min(
+    highlight?.query === query && highlightIndex >= 0 ? highlightIndex : initial,
+    visible.length - 1,
+  )
   return { searchable, sections, visible, active }
 }
 
@@ -101,9 +113,10 @@ interface ChooseOptions {
   /** Counts closings, so a late answer can tell the menu it was asked from has gone. */
   readonly closings: MutableRefObject<number>
   readonly close: (restoreFocus: boolean) => void
+  readonly isUnavailable?: (row: MenuRow) => boolean
 }
 
-function useChooseModel({ models, select, triggerRef, searchRef, closings, close }: ChooseOptions) {
+function useChooseModel({ models, select, triggerRef, searchRef, closings, close, isUnavailable }: ChooseOptions) {
   const [failure, setFailure] = useState<ModelFailure | undefined>()
   // A selection hands focus back to the trigger, which should not light up its ring for it.
   const [settled, setSettled] = useState(false)
@@ -112,6 +125,7 @@ function useChooseModel({ models, select, triggerRef, searchRef, closings, close
     if (!isMobileDevice()) searchRef.current?.focus()
   }
   const choose = (row: MenuRow): void => {
+    if (isUnavailable?.(row) === true) return
     setSettled(true)
     if (isRow(row, models.current)) {
       close(true)
@@ -148,6 +162,9 @@ function closeOnBlurOutside(
   close: () => void,
 ): (event: { relatedTarget: EventTarget | null }) => void {
   return ({ relatedTarget }) => {
+    // A press on non-focusable padding or a scrollbar blurs the search to nowhere. The
+    // outside-press listener already owns that case, so do not close the menu here.
+    if (relatedTarget === null) return
     const staysInside =
       relatedTarget instanceof Node && inside.some((ref) => ref.current?.contains(relatedTarget) === true)
     if (!staysInside) close()
@@ -161,23 +178,33 @@ export interface ModelSeatProps {
   readonly locked: boolean
   readonly load: () => void
   readonly select: SelectModel
+  readonly isUnavailable?: (row: MenuRow) => boolean
 }
 
 /** Open state, search text and highlight, which a close resets together. */
 function useMenuState(triggerRef: RefObject<HTMLButtonElement>) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [highlight, setHighlight] = useState<number | null>(null)
+  const [highlight, setHighlight] = useState<Highlight | null>(null)
   const closings = useRef(0)
   const close = (restoreFocus = false): void => {
     closings.current += 1
     setOpen(false)
     setQuery('')
     setHighlight(null)
-    if (restoreFocus)
-      queueMicrotask(() => {
-        triggerRef.current?.focus()
-      })
+    if (!restoreFocus) return
+    const restore = (): void => {
+      const trigger = triggerRef.current
+      if (trigger !== null) {
+        trigger.focus()
+        return
+      }
+      // The selection moved the session to a provider without this control, so hand focus
+      // to the seat the harness put back in its place.
+      document.querySelector<HTMLButtonElement>(NATIVE_MODEL_SEAT)?.focus()
+    }
+    queueMicrotask(restore)
+    requestAnimationFrame(restore)
   }
   return { open, setOpen, query, setQuery, highlight, setHighlight, closings, close }
 }
@@ -191,50 +218,131 @@ function useSeatRefs() {
   }
 }
 
+interface MenuKeyOptions {
+  readonly event: KeyboardEvent<HTMLDivElement>
+  readonly showing: boolean
+  readonly composing: (event: globalThis.KeyboardEvent) => boolean
+  readonly pending: DirectorySelection | null
+  readonly visible: readonly MenuRow[]
+  readonly active: number
+  readonly close: (restoreFocus?: boolean) => void
+  readonly choose: (row: MenuRow) => void
+  readonly setHighlight: (value: number) => void
+  readonly cardRef: RefObject<HTMLDivElement>
+  readonly isUnavailable?: (row: MenuRow) => boolean
+}
+
+/** Arrow keys move the highlight; Enter and Tab choose; Escape and Shift+Tab leave. */
+function handleMenuKey({
+  event,
+  showing,
+  composing,
+  pending,
+  visible,
+  active,
+  close,
+  choose,
+  setHighlight,
+  cardRef,
+  isUnavailable,
+}: MenuKeyOptions): void {
+  if (!showing || composing(event.nativeEvent)) return
+  const target = event.target
+  if (target instanceof Element && target.closest(`.${ROW_FAVORITE_CLASS}`) !== null && event.key !== 'Escape') return
+  if (event.key === 'Tab' && !event.shiftKey) {
+    const star = cardRef.current?.querySelector<HTMLButtonElement>(`.${ROW_FAVORITE_CLASS}`)
+    if (star !== null && star !== undefined) {
+      event.preventDefault()
+      star.focus()
+      return
+    }
+  }
+  const action = keyAction(event)
+  if (action === undefined) return
+  if (action === 'close') {
+    event.preventDefault()
+    close(true)
+    return
+  }
+  const row = visible[active]
+  if (action === 'choose') {
+    // Tab is also a way out of the menu. With nothing to choose it must keep moving focus.
+    if (pending !== null || row === undefined) return
+    event.preventDefault()
+    choose(row)
+    return
+  }
+  event.preventDefault()
+  for (let step = 1; step <= visible.length; step += 1) {
+    const index = (active + action * step + visible.length * step) % visible.length
+    const candidate = visible[index]
+    if (candidate !== undefined && isUnavailable?.(candidate) !== true) {
+      setHighlight(index)
+      break
+    }
+  }
+}
+
+function rowHighlighter(
+  rows: readonly MenuRow[],
+  query: string,
+  setRow: (value: Highlight | null) => void,
+): (index: number) => void {
+  return (index) => {
+    setRow({ row: rows[index], query })
+  }
+}
+
+function menuKeyHandler(options: Omit<MenuKeyOptions, 'event'>): (event: KeyboardEvent<HTMLDivElement>) => void {
+  return (event) => {
+    handleMenuKey({ ...options, event })
+  }
+}
+
 /**
  * Everything the control's markup binds to.
  * @param props - the models, the pending selection and the host's actions.
  * @returns refs, state and handlers for the trigger and the card.
  */
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types -- the shape is whatever the markup binds to; spelling it out would duplicate every field
-export function useModelSeat({ models, pending, locked, load, select }: ModelSeatProps) {
+export function useModelSeat({ models, pending, locked, load, select, isUnavailable }: ModelSeatProps) {
   const refs = useSeatRefs()
   const { rootRef, triggerRef, cardRef, searchRef } = refs
-  const { open, setOpen, query, setQuery, highlight, setHighlight, closings, close } = useMenuState(triggerRef)
+  const state = useMenuState(triggerRef)
+  const { open, setOpen, query, setQuery, highlight, closings, close } = state
   const id = useId()
   const showing = open && !locked
   const { searchable, sections, visible, active } = useMatchingRows(models, query, highlight)
+  const setHighlight = rowHighlighter(visible, query, state.setHighlight)
   const composing = useCompositionGuard()
 
-  const choosing = useChooseModel({ models, select, triggerRef, searchRef, closings, close })
+  const choosing = useChooseModel({ models, select, triggerRef, searchRef, closings, close, isUnavailable })
   useCloseOnOutsidePress(showing, [rootRef, cardRef], close)
   useMenuFocus(showing, searchable, `${id}-model-${active}`, searchRef)
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (!showing || composing(event.nativeEvent)) return
-    const action = keyAction(event)
-    if (action === undefined) return
-    event.preventDefault()
-    const row = visible[active]
-    if (action === 'close') close(true)
-    else if (pending !== null || row === undefined) return
-    else if (action === 'choose') choosing.choose(row)
-    else setHighlight((active + action + visible.length) % visible.length)
-  }
-
-  const onBlur = closeOnBlurOutside([rootRef, cardRef], () => {
-    close()
+  const onKeyDown = menuKeyHandler({
+    showing,
+    composing,
+    pending,
+    visible,
+    active,
+    close,
+    choose: choosing.choose,
+    setHighlight,
+    cardRef,
+    isUnavailable,
   })
 
+  const onBlur = closeOnBlurOutside([rootRef, cardRef], close)
+
   const toggle = (): void => {
-    if (open) {
-      close(true)
-      return
+    if (open) close(true)
+    else {
+      choosing.setSettled(false)
+      triggerRef.current?.focus()
+      setOpen(true)
+      load()
     }
-    choosing.setSettled(false)
-    triggerRef.current?.focus()
-    setOpen(true)
-    load()
   }
 
   return {

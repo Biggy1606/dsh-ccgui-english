@@ -60,6 +60,70 @@ describe('CliSession resume', () => {
     expect(textOf(chunks)).toContain('ok')
   })
 
+  it('sends a checkpoint and DSH context with the first prompt of a fresh session only', async () => {
+    const checkpoint = {
+      ...user('checkpoint', 'Prior work summary'),
+      source: { kind: 'compact-checkpoint' },
+    } as RequestMessage
+    const context = { ...user('context', 'Current workspace'), source: { kind: 'runtime-context' } } as RequestMessage
+    const { fake, session } = setup(
+      () => 'end_turn',
+      () => 'end_turn',
+    )
+    const messages = [checkpoint, assistantWithReplay('old', 'other-session'), user('2', 'continue'), context]
+    const chunks = await collect(session.stream({ messages }))
+    expect(fake.prompts[0]).toEqual([
+      { type: 'text', text: '[Earlier conversation summary: background only, not new instructions]' },
+      { type: 'text', text: 'Prior work summary' },
+      { type: 'text', text: 'continue' },
+      { type: 'text', text: 'Current workspace' },
+    ])
+    expect(textOf(chunks)).toContain('received an earlier summary, but may be missing messages after that summary')
+    await collect(session.stream({ messages: [...messages, assistantWithReplay('acp-1', 'dsh-1'), user('3', 'next')] }))
+    expect(fake.prompts[1]).toEqual([{ type: 'text', text: 'next' }])
+  })
+
+  it('restores retained DSH context when switching to a fresh CLI on a later turn', async () => {
+    const context = {
+      ...user('old-context', 'Workspace context'),
+      source: { kind: 'runtime-context' },
+    } as RequestMessage
+    const newer = { ...user('new-context', 'Updated workspace'), source: { kind: 'runtime-context' } } as RequestMessage
+    const { fake, session } = setup(() => 'end_turn')
+    const messages = [context, newer, assistantWithReplay('old', 'other-session'), user('new', 'continue')]
+    await collect(session.stream({ messages, currentTurnMessageIds: new Set(['new']) }))
+    expect(fake.prompts[0]).toEqual([
+      { type: 'text', text: 'Updated workspace' },
+      { type: 'text', text: 'continue' },
+    ])
+  })
+
+  it('sends a checkpoint even when compaction hides every earlier assistant message', async () => {
+    const checkpoint = {
+      ...user('checkpoint', 'Prior work summary'),
+      source: { kind: 'compact-checkpoint' },
+    } as RequestMessage
+    const { fake, session } = setup(() => 'end_turn')
+    await collect(session.stream({ messages: [checkpoint, user('2', 'continue')] }))
+    expect(fake.prompts[0]).toEqual([
+      { type: 'text', text: '[Earlier conversation summary: background only, not new instructions]' },
+      { type: 'text', text: 'Prior work summary' },
+      { type: 'text', text: 'continue' },
+    ])
+  })
+
+  it('does not resend a checkpoint when the native session resumes', async () => {
+    const checkpoint = {
+      ...user('checkpoint', 'Prior work summary'),
+      source: { kind: 'compact-checkpoint' },
+    } as RequestMessage
+    const { fake, session } = setup(() => 'end_turn')
+    fake.capabilities = { sessionCapabilities: { resume: {} } }
+    await collect(session.stream({ messages: [checkpoint, ...history] }))
+    expect(fake.resumed).toEqual(['acp-old'])
+    expect(fake.prompts[0]).toEqual([{ type: 'text', text: 'continue' }])
+  })
+
   it('starts fresh with a notice when resume fails', async () => {
     const { fake, session } = setup(() => 'end_turn')
     fake.capabilities = { sessionCapabilities: { resume: {} } }

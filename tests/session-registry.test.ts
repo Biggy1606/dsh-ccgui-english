@@ -207,6 +207,26 @@ describe('resolveSession', () => {
     expect(sessions[0]?.dispose).toHaveBeenCalled()
   })
 
+  it('keeps the live CLI for the rest of an open turn, then switches on the next one', () => {
+    const { registry, sessions } = setup()
+    registry.observeEvent('dsh-1', { type: 'turn/start' })
+    const first = registry.resolveSession('cli-x', 'dsh-1')
+    expect(registry.resolveSession('cli-y', 'dsh-1')).toBe(first)
+    expect(sessions).toHaveLength(1)
+    expect(first.dispose).not.toHaveBeenCalled()
+    registry.observeEvent('dsh-1', { type: 'turn/end' })
+    expect(registry.resolveSession('cli-y', 'dsh-1')).not.toBe(first)
+    expect(first.dispose).toHaveBeenCalled()
+  })
+
+  it('switches on the first step of a new turn without an open one', () => {
+    const { registry, sessions } = setup()
+    const first = registry.resolveSession('cli-x', 'dsh-1')
+    const second = registry.resolveSession('cli-y', 'dsh-1')
+    expect(second).not.toBe(first)
+    expect(sessions).toHaveLength(2)
+  })
+
   it('rejects an unknown route', () => {
     expect(() => setup().registry.resolveSession('nope', 'dsh-1')).toThrow(
       expect.objectContaining({ code: 'CLI_START_FAILED' }),

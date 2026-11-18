@@ -9,7 +9,7 @@ import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import CliBridge from '../src/index.ts'
 import type { CliAgentConfig, Config } from '../src/index.ts'
 import { CLI_TOOL_NAME, DEFAULT_MODEL_ID } from '../src/constants.ts'
-import { collect, textOf, toolCallOf, user } from './fixtures/cli-session-helpers.ts'
+import { collect, finishOf, textOf, toolCallOf, toolResult, user } from './fixtures/cli-session-helpers.ts'
 import {
   BASE,
   BROKEN,
@@ -332,6 +332,21 @@ describe('CliBridge sessions', () => {
       [[process.execPath, FAKE_AGENT], cwd],
     ])
     expect(h.subprocess.spawned[0]?.spec).toMatchObject({ graceMs: 200 })
+  })
+
+  it('keeps an open turn on its CLI when the provider changes mid-turn', async () => {
+    const h = harness()
+    await start(h, { agents: [FAKE, { ...FAKE, id: 'other', name: 'Other CLI' }] })
+    addAgent(h)
+    openTurn(h, 'dsh-1', ['m1'])
+    const adapter = onlyAdapter(h)
+    const first = await collect(adapter.stream(request({ messages: [user('m1', 'READ')] })))
+    expect(toolCallOf(first).name).toBe(CLI_TOOL_NAME)
+    const second = await collect(
+      adapter.stream(request({ provider: 'cli-other', messages: [user('m1', 'READ'), toolResult()] })),
+    )
+    expect(h.subprocess.spawned).toHaveLength(1)
+    expect(finishOf(second)?.replayState).toBeUndefined()
   })
 
   it('passes the configured environment to the CLI', async () => {

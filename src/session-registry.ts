@@ -79,6 +79,8 @@ export class CliSessionRegistry {
   private sessions: ReadonlyMap<string, LiveSession> = new Map()
   private stopping: ReadonlyMap<string, Promise<void>> = new Map()
   private turnMessages: ReadonlyMap<string, ReadonlySet<string>> = new Map()
+  /** The CLI a session's open turn is pinned to, so a mid-turn selection cannot replace it. */
+  private turnRoutes: ReadonlyMap<string, string> = new Map()
   /** Native modes picked while their session had no CLI yet, by harness session. */
   private pickedModes: ReadonlyMap<string, { readonly provider: string; readonly mode: string }> = new Map()
 
@@ -147,12 +149,14 @@ export class CliSessionRegistry {
     switch (event.type) {
       case 'turn/start':
         this.turnMessages = new Map([...this.turnMessages, [sessionId, new Set<string>()]])
+        this.turnRoutes = without(this.turnRoutes, sessionId)
         return
       case 'user/message':
         this.recordTurnMessage(sessionId, (event.data as { id?: unknown } | undefined)?.id)
         return
       case 'turn/end':
         this.turnMessages = without(this.turnMessages, sessionId)
+        this.turnRoutes = without(this.turnRoutes, sessionId)
         this.sessions.get(sessionId)?.session.abandonTurn()
         return
       case 'model/selection':
@@ -248,7 +252,18 @@ export class CliSessionRegistry {
     const agent = this.deps.getAgent(sessionId)
     if (agent === undefined) throw new LlmError(`Session ${sessionId} not found.`, 'CLI_START_FAILED')
     const current = this.sessions.get(sessionId)
-    if (current?.provider === provider && !current.session.replaceable) return current.session
+    const turnOpen = this.turnMessages.has(sessionId)
+    const pinned = this.turnRoutes.get(sessionId)
+    if (current?.provider === provider && !current.session.replaceable) {
+      if (turnOpen) this.pinTurn(sessionId, provider)
+      return current.session
+    }
+    // A selection made while a turn is streaming applies at the next step of that same
+    // turn. Replacing the live CLI there would discard its work and start an empty one;
+    // keep the turn's CLI and let the next turn's first step resolve the new selection.
+    if (current !== undefined && !current.session.replaceable && turnOpen && pinned === current.provider) {
+      return current.session
+    }
     this.stopSession(sessionId)
     const { cwd } = agent.session.header
     if (cwd === undefined)
@@ -259,6 +274,7 @@ export class CliSessionRegistry {
       ...this.startMode(sessionId, provider),
     })
     this.sessions = new Map([...this.sessions, [sessionId, { provider, session }]])
+    if (turnOpen) this.pinTurn(sessionId, provider)
     return session
   }
 
@@ -284,6 +300,7 @@ export class CliSessionRegistry {
    */
   disposeSession(sessionId: string): void {
     this.turnMessages = without(this.turnMessages, sessionId)
+    this.turnRoutes = without(this.turnRoutes, sessionId)
     this.pickedModes = without(this.pickedModes, sessionId)
     this.stopSession(sessionId)
   }
@@ -295,6 +312,7 @@ export class CliSessionRegistry {
   disposeAll(reason?: string): void {
     for (const sessionId of this.sessions.keys()) {
       this.turnMessages = without(this.turnMessages, sessionId)
+      this.turnRoutes = without(this.turnRoutes, sessionId)
       this.stopSession(sessionId, reason)
     }
   }
@@ -315,6 +333,10 @@ export class CliSessionRegistry {
     if (this.pickedModes.get(sessionId)?.mode === mode) this.pickedModes = without(this.pickedModes, sessionId)
   }
 
+  private pinTurn(sessionId: string, provider: string): void {
+    this.turnRoutes = new Map([...this.turnRoutes, [sessionId, provider]])
+  }
+
   private recordTurnMessage(sessionId: string, id: unknown): void {
     const messages = this.turnMessages.get(sessionId)
     if (messages === undefined || typeof id !== 'string') return
@@ -323,6 +345,7 @@ export class CliSessionRegistry {
 
   /** Stop the process only; the harness session and its open turn carry on. */
   private stopSession(sessionId: string, reason?: string): void {
+    this.turnRoutes = without(this.turnRoutes, sessionId)
     const live = this.sessions.get(sessionId)
     if (live === undefined) return
     this.sessions = without(this.sessions, sessionId)

@@ -47,12 +47,21 @@ describe('unseenUserInput', () => {
     expect(input.blocks).toEqual([{ type: 'text', text: 'new' }])
   })
 
-  // The harness projects runtime context into the history for its own model.
-  // The CLI assembles its own context, so forwarding this would only add noise.
-  it('does not forward runtime context', () => {
+  it('forwards current DSH context with the user prompt in order', () => {
     const input = unseenUserInput([user('c', 'Current time', 'runtime-context'), user('1', 'hello')], new Set())
-    expect(input.blocks).toEqual([{ type: 'text', text: 'hello' }])
+    expect(input.blocks).toEqual([
+      { type: 'text', text: 'Current time' },
+      { type: 'text', text: 'hello' },
+    ])
+    expect(input.ids).toEqual(['c', '1'])
   })
+
+  it.each(['agent-instructions', 'runtime-context', 'skill-catalog', 'time-context', 'model-selection'])(
+    'does not start a turn for %s alone',
+    (kind) => {
+      expect(unseenUserInput([user('1', 'context', kind)], new Set())).toEqual({ ids: [], blocks: [] })
+    },
+  )
 
   it('keeps conversation order across several trailing messages', () => {
     const input = unseenUserInput([user('1', 'a'), user('2', 'b')], new Set())
@@ -88,10 +97,15 @@ describe('unseenUserInput', () => {
     expect(unseenUserInput([user('1', 'hello'), developer], new Set()).ids).toEqual(['1'])
   })
 
-  // The harness also writes reminders and instructions as user-role messages. Those
-  // are meant for its own model; forwarded, they would start CLI turns nobody asked for.
-  it.each(['repeat-tool-reminder', 'agent-instructions', 'future-kind'])('does not forward %s messages', (kind) => {
+  // Unknown reminders are not prompts and must not start a CLI turn.
+  it.each(['repeat-tool-reminder', 'future-kind'])('does not forward %s messages', (kind) => {
     expect(unseenUserInput([user('1', 'note', kind)], new Set())).toEqual({ ids: [], blocks: [] })
+  })
+
+  it.each(['agent-message', 'subagent-settled'])('forwards an explicit %s relay once', (kind) => {
+    const message = user('relay', 'Agent report', kind)
+    expect(unseenUserInput([message], new Set()).blocks).toEqual([{ type: 'text', text: 'Agent report' }])
+    expect(unseenUserInput([message], new Set(['relay'])).blocks).toEqual([])
   })
 
   it('forwards a scheduled prompt, which the user wrote', () => {

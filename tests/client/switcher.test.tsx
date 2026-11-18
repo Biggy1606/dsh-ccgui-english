@@ -138,6 +138,7 @@ describe('apply', () => {
     expect(h.registrations.map(({ options }) => [options.id, options.name, options.order])).toEqual([
       ['dsh-ccgui.switcher', 'conversation.input.left', undefined],
       ['dsh-ccgui.model-menu', 'conversation.input.right', 1000],
+      ['dsh-ccgui.native-favorites', 'conversation.input.model.options', undefined],
       ['dsh-ccgui.session-mark', 'sidebar.session.row.leading', 20],
       ['dsh-ccgui.mode-seat', 'conversation.input.left', 1],
       ['dsh-ccgui.session-status-mark', 'sidebar.session.row.trailing', undefined],
@@ -307,6 +308,23 @@ describe('CliSwitcher', () => {
   })
 })
 
+describe('CliSwitcher availability', () => {
+  it('stays hidden for an addressed subagent', () => {
+    const h = harness()
+    h.subagent = { parent: 's0' }
+    const { container } = renderSlot(h, 'dsh-ccgui.switcher')
+    expect(container.querySelector('button')).toBeNull()
+  })
+
+  it('disables a removed session and explains why', () => {
+    const h = harness()
+    renderSlot(h, 'dsh-ccgui.switcher')
+    h.session.set({ removed: true })
+    expect(switcher().hasAttribute('disabled')).toBe(true)
+    expect(switcher().getAttribute('title')).toBe('Session removed')
+  })
+})
+
 describe('CliSwitcher choosing', () => {
   it.each([
     ['a CLI on its default model', 'Codex CLI', { provider: 'cli-codex', model: 'default' }],
@@ -350,15 +368,17 @@ describe('CliSwitcher choosing', () => {
 })
 
 describe('CliSwitcher in a started session', () => {
-  it('locks and says how to change CLI', async () => {
+  it('stays usable and warns that the new CLI starts without the conversation', async () => {
     const h = harness()
     renderSlot(h, 'dsh-ccgui.switcher')
     h.session.set({ blank: false })
-    expect(switcher().hasAttribute('disabled')).toBe(true)
-    expect(switcher().getAttribute('title')).toBe('Start a new session to switch CLIs')
-    expect(switcher().querySelector('[data-icon="chevron-down"]')).toBeNull()
+    expect(switcher().hasAttribute('disabled')).toBe(false)
+    expect(switcher().getAttribute('title')).toBe('Switch CLI — the new CLI starts without this conversation')
+    expect(switcher().querySelector('[data-icon="chevron-down"]')).not.toBeNull()
     await userEvent.click(switcher())
-    expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.queryByRole('menu')).not.toBeNull()
+    await userEvent.click(screen.getByRole('menuitemradio', { name: 'Codex CLI' }))
+    expect(h.select).toHaveBeenCalledWith({ provider: 'cli-codex', model: 'default' })
   })
 })
 

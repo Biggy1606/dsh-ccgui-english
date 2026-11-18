@@ -6,7 +6,11 @@
  * the public `CliModelMenu` export so internal reorganisation does not break these tests.
  */
 
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { useState } from 'react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { menuModels } from '../../src/client/menu-models.ts'
+import { ModelCard } from '../../src/client/model-card.tsx'
+import { useModelSeat } from '../../src/client/model-seat.ts'
 import { userEvent } from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { DirectorySelection, DirectoryState } from '../../src/client/choices.ts'
@@ -43,10 +47,7 @@ function directoryState(
   provider = PROVIDER,
 ): DirectoryState {
   return {
-    groups: [
-      { id: provider, name: 'Fake CLI', models },
-      { id: 'deepseek-official', name: 'DeepSeek', models: [{ id: 'deepseek-chat', name: 'DeepSeek Chat' }] },
-    ],
+    groups: [{ id: provider, name: 'Fake CLI', models }],
     current: { provider, model: current },
     pending: pending ?? null,
   }
@@ -105,6 +106,98 @@ afterEach(() => {
   cleanup()
 })
 
+function FavoriteTestMenu({
+  select,
+  removeRow = false,
+}: {
+  readonly select: ModelMenuInjected['select']
+  readonly removeRow?: boolean
+}) {
+  const [favorite, setFavorite] = useState(true)
+  const listed = removeRow ? MANY_MODELS.slice(0, 5).filter((row) => favorite || row.id !== 'fake-large') : MANY_MODELS
+  const models = menuModels(directoryState(listed))
+  const isUnavailable = (row: { model: string }) => row.model === 'fake-large'
+  const seat = useModelSeat({ models, pending: null, locked: false, load: () => undefined, select, isUnavailable })
+  return (
+    <div ref={seat.rootRef} onKeyDown={seat.onKeyDown} onBlur={seat.onBlur}>
+      <button ref={seat.triggerRef} aria-controls={seat.showing ? `${seat.id}-menu` : undefined} onClick={seat.toggle}>
+        Open favorites
+      </button>
+      {seat.showing && (
+        <ModelCard
+          id={seat.id}
+          models={models}
+          sections={seat.sections}
+          active={seat.active}
+          pending={null}
+          query={seat.query}
+          anchorStyle={{}}
+          cardRef={seat.cardRef}
+          searchRef={seat.searchRef}
+          onQuery={(query) => {
+            seat.setQuery(query)
+            seat.setHighlight(0)
+          }}
+          onHighlight={seat.setHighlight}
+          onChoose={seat.choose}
+          isUnavailable={isUnavailable}
+          isFavorite={(row) => (row.model === 'fake-large' ? favorite : undefined)}
+          onToggleFavorite={() => {
+            setFavorite(!favorite)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+describe('favorite model controls', () => {
+  it('returns focus to the trigger when removing a favorite also removes search', async () => {
+    const select = vi.fn<ModelMenuInjected['select']>(() => Promise.resolve({}))
+    const user = userEvent.setup()
+    render(<FavoriteTestMenu select={select} removeRow />)
+    const open = screen.getByRole('button', { name: 'Open favorites' })
+    await user.click(open)
+    expect(screen.getByRole('searchbox')).not.toBeNull()
+    await user.tab()
+    await user.keyboard('{Enter}')
+    expect(screen.queryByRole('searchbox')).toBeNull()
+    expect(document.activeElement).toBe(open)
+    expect(screen.getByRole('menu', { name: 'Models' })).not.toBeNull()
+  })
+
+  it('highlights the first new result when the query changes', async () => {
+    const { user, select } = setup(directoryState(MANY_MODELS))
+    await user.click(trigger())
+    const search = screen.getByRole('searchbox')
+    fireEvent.change(search, { target: { value: 'huge' } })
+    expect(rowNames()).toEqual(['Fake Huge'])
+    fireEvent.change(search, { target: { value: 'fake' } })
+    expect(activeRow()).toBe('Fake Small（默认）')
+    await user.keyboard('{ArrowDown}{Enter}')
+    expect(select).toHaveBeenCalledWith({ provider: PROVIDER, model: 'fake-small' })
+  })
+  it('keeps a separate keyboard-operable star for an unavailable model without choosing or closing', async () => {
+    const select = vi.fn<ModelMenuInjected['select']>(() => Promise.resolve({}))
+    const user = userEvent.setup()
+    render(<FavoriteTestMenu select={select} />)
+    await user.click(screen.getByRole('button', { name: 'Open favorites' }))
+    const unavailable = screen.getByRole('menuitemradio', { name: /Fake Large/ })
+    expect(unavailable.hasAttribute('disabled')).toBe(true)
+    expect(unavailable.textContent).toContain('Unavailable')
+    await user.keyboard('large{Enter}')
+    expect(select).not.toHaveBeenCalled()
+    await user.tab()
+    const star = screen.getByRole('button', { name: 'Remove Fake Large from favorites' })
+    expect(document.activeElement).toBe(star)
+    expect(unavailable.contains(star)).toBe(false)
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('button', { name: 'Add Fake Large to favorites' })).not.toBeNull()
+    expect(screen.getByRole('menu', { name: 'Models' })).not.toBeNull()
+    expect(select).not.toHaveBeenCalled()
+  })
+})
+
 describe('CliModelMenu rendering', () => {
   it('renders nothing for an addressed subagent', () => {
     const directory = createStore(directoryState())
@@ -149,13 +242,34 @@ describe('CliModelMenu rendering', () => {
 })
 
 describe('CliModelMenu opening and closing', () => {
-  it("opens on the trigger with only this CLI's models, and loads the catalog", async () => {
+  it("opens on the trigger with this CLI's models, and loads the catalog", async () => {
     const { user, load } = setup()
     await user.click(trigger())
     expect(trigger().getAttribute('aria-expanded')).toBe('true')
     expect(trigger().getAttribute('aria-controls')).toBe(card()?.id)
     expect(rowNames()).toEqual(['Fake Small（默认）', 'Fake Small', 'Fake Large'])
     expect(load).toHaveBeenCalledTimes(1)
+  })
+
+  it('lists the harness and the other CLIs too, and a pick moves the session there', async () => {
+    const deepseek = {
+      id: 'deepseek-official',
+      name: 'DeepSeek',
+      models: [{ id: 'deepseek-chat', name: 'DeepSeek Chat' }],
+    }
+    const other = { id: 'cli-other', name: 'Other CLI', models: [{ id: 'other-model', name: 'Other Model' }] }
+    const { user, select } = setup({
+      groups: [{ id: PROVIDER, name: 'Fake CLI', models: FEW_MODELS }, deepseek, other],
+      current: { provider: PROVIDER, model: 'default' },
+      pending: null,
+    })
+    await user.click(trigger())
+    expect(rowNames()).toEqual(['Fake Small（默认）', 'Fake Small', 'Fake Large', 'DeepSeek Chat', 'Other Model'])
+    await user.click(screen.getByRole('menuitemradio', { name: 'DeepSeek Chat' }))
+    expect(select).toHaveBeenCalledWith({ provider: 'deepseek-official', model: 'deepseek-chat' })
+    await user.click(trigger())
+    await user.click(screen.getByRole('menuitemradio', { name: 'Other Model' }))
+    expect(select).toHaveBeenLastCalledWith({ provider: 'cli-other', model: 'other-model' })
   })
 
   it('marks the current model as checked', async () => {
@@ -230,6 +344,23 @@ describe('CliModelMenu opening and closing', () => {
     expect(surface).not.toBeNull()
     if (surface instanceof HTMLElement) await user.click(surface)
     expect(rows()).toHaveLength(3)
+  })
+
+  it('keeps the search focused when a press hits non-focusable padding', async () => {
+    const { user } = setup(directoryState(MANY_MODELS))
+    await user.click(trigger())
+    const search = screen.getByRole('searchbox', { name: 'Search models…' })
+    fireEvent.blur(search, { relatedTarget: null })
+    expect(rows()).toHaveLength(MANY_MODELS.length)
+    fireEvent.blur(search, { relatedTarget: document.body })
+    expect(rows()).toHaveLength(0)
+  })
+
+  it('names the card and its list differently for assistive technology', async () => {
+    const { user } = setup()
+    await user.click(trigger())
+    expect(screen.getByRole('group', { name: 'Model selection' })).not.toBeNull()
+    expect(screen.getByRole('menu', { name: 'Models' })).not.toBeNull()
   })
 
   it('closes when focus leaves for something outside', async () => {
@@ -357,6 +488,16 @@ describe('CliModelMenu search', () => {
     expect(select).not.toHaveBeenCalled()
   })
 
+  it('leaves Tab alone when nothing matches, and hides the empty row list', async () => {
+    const { user } = setup(directoryState(MANY_MODELS))
+    await user.click(trigger())
+    const search = screen.getByRole('searchbox', { name: 'Search models…' })
+    await user.keyboard('zzz')
+    const list = document.getElementById(search.getAttribute('aria-controls') ?? '')
+    expect(list?.hasAttribute('hidden')).toBe(true)
+    expect(fireEvent.keyDown(search, { key: 'Tab' })).toBe(true)
+  })
+
   it('clears the search when the menu closes', async () => {
     const { user } = setup(directoryState(MANY_MODELS))
     await user.click(trigger())
@@ -398,7 +539,9 @@ describe('CliModelMenu choosing with the mouse', () => {
     ]
     const { user, select } = setup(directoryState(vendored))
     await user.click(trigger())
-    expect(screen.getAllByRole('presentation').map((heading) => heading.textContent)).toEqual(['deepseek', 'kimi-code'])
+    expect(
+      Array.from(document.querySelectorAll('[data-menu-group-heading]')).map((heading) => heading.textContent),
+    ).toEqual(['Fake CLI', 'Fake CLI · deepseek', 'Fake CLI · kimi-code'])
     expect(rowNames()).toEqual(['Flash（默认）', 'DeepSeek Flash', 'K3'])
     await user.keyboard('{ArrowDown}{ArrowDown}{Enter}')
     expect(select).toHaveBeenCalledWith({ provider: PROVIDER, model: 'kimi-code/k3' })
@@ -482,5 +625,32 @@ describe('CliModelMenu late answers and locking', () => {
     const { directory } = setup()
     directory.set(directoryState(FEW_MODELS, 'fake-large'))
     expect(trigger().getAttribute('title')).toBe('Fake Large')
+  })
+
+  it('hands focus to the native seat when the selection leaves the CLI', async () => {
+    const state: DirectoryState = {
+      groups: [
+        { id: PROVIDER, name: 'Fake CLI', models: FEW_MODELS },
+        { id: 'deepseek-official', name: 'DeepSeek', models: [{ id: 'chat', name: 'DeepSeek Chat' }] },
+      ],
+      current: { provider: PROVIDER, model: 'default' },
+    }
+    const slot = document.createElement('div')
+    slot.dataset.slot = 'conversation.input.model'
+    const native = document.createElement('button')
+    slot.append(native)
+    document.body.append(slot)
+    const holder: { directory?: Setup['directory'] } = {}
+    const { user, directory } = setup(state, () => {
+      holder.directory?.set({ ...state, current: { provider: 'deepseek-official', model: 'chat' } })
+      return Promise.resolve({})
+    })
+    holder.directory = directory
+    await user.click(trigger())
+    await user.click(screen.getByRole('menuitemradio', { name: 'DeepSeek Chat' }))
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(native)
+    })
+    slot.remove()
   })
 })
