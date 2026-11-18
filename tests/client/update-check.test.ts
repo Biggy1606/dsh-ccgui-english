@@ -7,7 +7,7 @@ import {
 } from '../../src/client/update-check.ts'
 import type { Fetch } from '../../src/client/update-check.ts'
 
-const PAGE = 'https://github.com/zhukunpenglinyutong/dsh-ccgui/releases/tag/v1.0.2'
+const PAGE = 'https://github.com/Biggy1606/dsh-ccgui-english/releases/tag/v1.0.2'
 
 function respond(body: unknown, status = 200): Fetch {
   return vi.fn<Fetch>(() => Promise.resolve(new Response(JSON.stringify(body), { status })))

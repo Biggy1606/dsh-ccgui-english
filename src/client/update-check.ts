@@ -17,8 +17,8 @@ export interface LatestRelease {
 
 // The release workflow creates a GitHub Release for every v* tag, so its latest one is the newest
 // published version; GitHub serves the API with CORS open, which the renderer needs.
-export const LATEST_RELEASE_API = 'https://api.github.com/repos/zhukunpenglinyutong/dsh-ccgui/releases/latest'
-const RELEASE_PAGE_PREFIX = 'https://github.com/zhukunpenglinyutong/dsh-ccgui/releases/'
+export const LATEST_RELEASE_API = 'https://api.github.com/repos/Biggy1606/dsh-ccgui-english/releases/latest'
+const RELEASE_PAGE_PREFIX = 'https://github.com/Biggy1606/dsh-ccgui-english/releases/'
 const SEMVER = /^v?(\d+)\.(\d+)\.(\d+)$/
 // A check that hangs must not keep the settings page waiting for a chip that never comes.
 const CHECK_TIMEOUT_MS = 8000

@@ -17,7 +17,7 @@ declare const __DSH_CCGUI_VERSION__: string | undefined
 export const PLUGIN_VERSION: string = typeof __DSH_CCGUI_VERSION__ === 'string' ? __DSH_CCGUI_VERSION__ : 'Development'
 
 // This plugin's own repository, matching package.json's `repository` (a test keeps them in step).
-const REPO_URL = 'https://github.com/zhukunpenglinyutong/dsh-ccgui'
+const REPO_URL = 'https://github.com/Biggy1606/dsh-ccgui-english'
 const VERSION_LABEL = 'Version'
 // A release reads as v0.3.0, like the harness's own 新版本 chip; the source run keeps its word.
 const VERSION_VALUE = /^\d/.test(PLUGIN_VERSION) ? `v${PLUGIN_VERSION}` : PLUGIN_VERSION

@@ -38,7 +38,7 @@ describe('SettingsAbout', () => {
   it("links to this plugin's repository in a new window", () => {
     render(<SettingsAbout />)
     const link = screen.getByRole('link', { name: 'GitHub' })
-    expect(packageRepositoryPage()).toBe('https://github.com/zhukunpenglinyutong/dsh-ccgui')
+    expect(packageRepositoryPage()).toBe('https://github.com/Biggy1606/dsh-ccgui-english')
     expect(link.getAttribute('href')).toBe(packageRepositoryPage())
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noreferrer')
@@ -61,7 +61,7 @@ describe('SettingsAbout', () => {
   })
 
   it('turns the version pill into a link to a newer release', async () => {
-    const url = 'https://github.com/zhukunpenglinyutong/dsh-ccgui/releases/tag/v1.0.2'
+    const url = 'https://github.com/Biggy1606/dsh-ccgui-english/releases/tag/v1.0.2'
     const { container } = render(<SettingsAbout checkUpdate={() => Promise.resolve({ version: '1.0.2', url })} />)
     const link = await screen.findByRole('link', { name: 'Version v1.0.2 is available; view release notes' })
     expect(link.getAttribute('href')).toBe(url)

@@ -6,11 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zhukunpenglinyutong/dsh-ccgui.git"
+    "url": "git+https://github.com/Biggy1606/dsh-ccgui-english.git"
   },
-  "homepage": "https://github.com/zhukunpenglinyutong/dsh-ccgui#readme",
+  "homepage": "https://github.com/Biggy1606/dsh-ccgui-english#readme",
   "bugs": {
-    "url": "https://github.com/zhukunpenglinyutong/dsh-ccgui/issues"
+    "url": "https://github.com/Biggy1606/dsh-ccgui-english/issues"
   },
   "type": "module",
   "main": "lib/index.js",
