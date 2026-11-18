@@ -79,7 +79,7 @@ export async function openHarness() {
     await sleep(500)
   }
 
-  const cliSwitcher = () => page.getByRole('button', { name: '切换 CLI' })
+  const cliSwitcher = () => page.getByRole('button', { name: 'Switch CLI' })
 
   /** Put the open session on a CLI with the composer's switcher. */
   async function chooseCli(name) {
@@ -101,16 +101,26 @@ export async function openHarness() {
     await chooseCli(name)
   }
 
-  const modelTrigger = () => page.getByRole('button', { name: /^(选择模型|请选择模型)/ }).last()
+  /**
+   * The harness's own picker is the composer's only model control, so it is found by its
+   * seat rather than by a label, which the host localizes.
+   */
+  const modelTrigger = () =>
+    page.locator('[data-slot="conversation.input.model"] button').filter({ visible: true }).last()
 
   /** Escape only steps back a level in this menu, so repeat until it has closed. */
   async function closeModelMenu() {
-    for (let i = 0; i < 3 && (await modelTrigger().getAttribute('aria-expanded')) === 'true'; i += 1) {
+    const trigger = modelTrigger()
+    for (let i = 0; i < 3 && (await trigger.getAttribute('aria-expanded')) === 'true'; i += 1) {
       await page.keyboard.press('Escape')
       await sleep(250)
     }
   }
 
+  /**
+   * Open the harness's model list on its rows. A host that shows a root menu first drills
+   * into its model pane; a flat one opens straight on the rows.
+   */
   async function openModelList() {
     await closeModelMenu()
     await modelTrigger().click()
@@ -171,7 +181,7 @@ export async function openHarness() {
       await page.getByRole('menuitem', { name: /^设置/ }).click()
       await until(() => settingsDialog().isVisible(), 'settings dialog')
     }
-    await settingsDialog().getByRole('button', { name: 'CC GUI 设置' }).click()
+    await settingsDialog().getByRole('button', { name: 'CC GUI Settings' }).click()
   }
 
   async function closeSettings() {
@@ -216,6 +226,8 @@ export async function openHarness() {
     modelTrigger,
     modelNames,
     chooseModel,
+    openModelList,
+    closeModelMenu,
     openSession,
     openCcguiSettings,
     closeSettings,

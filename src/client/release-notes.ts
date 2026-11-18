@@ -54,7 +54,7 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
           },
           {
             title: 'Native sessions retain their model menu',
-            text: 'Non-CLI sessions keep the DSH model control, reasoning level and agent team toggle. The plugin only hides CLI groups that cannot be selected in the native menu.',
+            text: 'Non-CLI sessions keep the DSH model control, reasoning level and agent team toggle. Both that native menu and the plugin’s CLI-session model menu list every provider, so either surface can move the session between CLIs and DSH.',
           },
         ],
       },

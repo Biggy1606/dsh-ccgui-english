@@ -1,5 +1,5 @@
 /**
- * What the composer's CLI switcher and model menu offer, derived from the model directory.
+ * What the composer's CLI switcher offers, derived from the model directory.
  * @module dsh-ccgui/client/choices
  */
 
@@ -27,7 +27,7 @@ interface DirectoryModel {
 }
 
 /** One provider group in the model directory. */
-export interface DirectoryGroup {
+interface DirectoryGroup {
   readonly id: string
   readonly name: string
   readonly models: readonly DirectoryModel[]
@@ -58,36 +58,6 @@ export interface CliChoices {
   readonly items: readonly { readonly id: string; readonly label: string }[]
   readonly currentId: string | undefined
   readonly currentLabel: string | undefined
-}
-
-/** What the model menu renders for a session on a CLI. */
-export interface CliModels {
-  readonly provider: string
-  readonly name: string
-  readonly rows: readonly DirectoryModel[]
-  readonly currentId: string | undefined
-  readonly currentName: string | undefined
-  /** False while the only row is the stand-in a CLI has before it reports its models. */
-  readonly listed: boolean
-}
-
-/**
- * List the models of the CLI a session is on.
- * @param state - the session's model directory.
- * @returns that CLI's rows, or undefined when the session is not on a CLI in the catalog.
- */
-export function cliModels({ groups, current }: DirectoryState): CliModels | undefined {
-  const group = groups.find((candidate) => candidate.id === current?.provider)
-  if (!group?.id.startsWith(CLI_ROUTE_PREFIX)) return undefined
-  const selected = group.models.find((model) => model.id === current?.model)
-  return {
-    provider: group.id,
-    name: group.name,
-    rows: group.models,
-    currentId: selected?.id,
-    currentName: selected?.name,
-    listed: group.models.some((model) => model.name !== group.name),
-  }
 }
 
 const isCli = (id: string): boolean => id.startsWith(CLI_ROUTE_PREFIX)

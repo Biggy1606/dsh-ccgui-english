@@ -20,7 +20,13 @@ import { abortable } from './abortable.ts'
 import { AsyncQueue } from './async-queue.ts'
 import { readEffortList, readModeList, readModelList } from './model-options.ts'
 import type { CliEffortList, CliModeList } from './model-options.ts'
-import { nativeReplayState, readNativeSession, unseenUserInput } from './request-input.ts'
+import {
+  checkpointContext,
+  nativeReplayState,
+  readNativeSession,
+  retainedContext,
+  unseenUserInput,
+} from './request-input.ts'
 import type { UserInput } from './request-input.ts'
 import { toPromptBlocks } from './prompt-images.ts'
 import { openSession, withinStartTimeout } from './session/connect.ts'
@@ -116,6 +122,11 @@ export class CliSession {
       },
       cancelGraceMs: options.cancelGraceMs ?? DEFAULT_CANCEL_GRACE_MS,
     })
+  }
+
+  /** The provider route this session serves. */
+  get provider(): string {
+    return this.options.provider
   }
 
   /** Whether this session can no longer run turns. */
@@ -265,7 +276,9 @@ export class CliSession {
     const input = this.unsentInput(request)
     if (input.blocks.length === 0) return
     // Read before anything is committed, so a failed read leaves the step as if never run.
-    const blocks = await this.promptBlocks(input, signal)
+    const checkpoint = this.owesFreshNotice ? checkpointContext(messages) : []
+    const retained = this.owesFreshNotice ? retainedContext(messages, input.ids) : []
+    const blocks = await this.promptBlocks({ ...input, blocks: [...checkpoint, ...retained, ...input.blocks] }, signal)
     // Steering joins a turn already under way, so only a fresh prompt can switch.
     if (!this.turns.busy) {
       await this.applySelection(request, signal)
@@ -276,7 +289,7 @@ export class CliSession {
     // and the user still needs to hear this when they send again.
     if (this.owesFreshNotice) {
       this.owesFreshNotice = false
-      this.pushFreshSessionNotice()
+      this.pushFreshSessionNotice(checkpoint.length > 0)
     }
     this.turns.enqueue({ ids: input.ids, blocks })
   }
@@ -343,7 +356,10 @@ export class CliSession {
     if (this.started !== undefined) return this.started
     // A conversation the new CLI session never saw: a replacement process, a fork, or
     // a session that started on another model. The user should know it starts blank.
-    const startsBlind = this.seen.size > 0 || messages.some((message) => message.role === 'assistant')
+    const startsBlind =
+      this.seen.size > 0 ||
+      messages.some((message) => message.role === 'assistant') ||
+      checkpointContext(messages).length > 0
     const nativeSessionId = readNativeSession(messages, this.options.dshSessionId, this.options.provider)
     this.started = this.connectInTime(nativeSessionId, startsBlind).catch((error: unknown) => {
       // Being stopped during startup is not a startup failure, and needs no install hint.
@@ -395,11 +411,14 @@ export class CliSession {
     this.owesFreshNotice = reattachFailed || (nativeSessionId === undefined && startsBlind)
   }
 
-  private pushFreshSessionNotice(): void {
+  private pushFreshSessionNotice(hasCheckpoint: boolean): void {
+    const context = hasCheckpoint
+      ? 'received an earlier summary, but may be missing messages after that summary'
+      : 'does not remember the previous content'
     this.events.push({
       type: 'text',
       notice: true,
-      text: `(${this.label} could not resume the previous session. A new session has started and does not remember the previous content.)\n\n`,
+      text: `(${this.label} could not resume the previous session. A new session has started and ${context}.)\n\n`,
     })
   }
 

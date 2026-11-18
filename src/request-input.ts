@@ -15,11 +15,17 @@ export interface UserInput {
 }
 
 /**
- * Message sources written by a person. The harness also uses the user role for its
- * own reminders and instructions; those are meant for its own model, and forwarded
- * they would start CLI turns nobody asked for.
+ * Prompts and explicit agent relays may start or steer a CLI turn. Ambient context is
+ * attached separately, so a snapshot alone never starts a turn.
  */
-const FORWARDED_KINDS: ReadonlySet<string> = new Set(['user', 'schedule'])
+const FORWARDED_KINDS: ReadonlySet<string> = new Set(['user', 'schedule', 'agent-message', 'subagent-settled'])
+const CONTEXT_KINDS: ReadonlySet<string> = new Set([
+  'agent-instructions',
+  'runtime-context',
+  'skill-catalog',
+  'time-context',
+  'model-selection',
+])
 
 /**
  * Starts the harness's note about a schedule edit. It has the same source kind as a
@@ -85,15 +91,47 @@ export function unseenUserInput(
   seen: ReadonlySet<string>,
   currentTurn?: ReadonlySet<string>,
 ): UserInput {
-  const fresh = messagesAfterLastReply(messages).filter(
-    (message) =>
-      isForwarded(message) &&
-      (message.id === undefined || (!seen.has(message.id) && (currentTurn?.has(message.id) ?? true))),
+  const eligible = messagesAfterLastReply(messages).filter(
+    (message) => message.id === undefined || (!seen.has(message.id) && (currentTurn?.has(message.id) ?? true)),
+  )
+  // Context is attached to a real prompt, never sent as a turn on its own.
+  if (!eligible.some(isForwarded)) return { ids: [], blocks: [] }
+  const fresh = eligible.filter(
+    (message) => isForwarded(message) || (message.role === 'user' && CONTEXT_KINDS.has(message.source?.kind ?? '')),
   )
   return {
     ids: fresh.flatMap((message) => (message.id === undefined ? [] : [message.id])),
     blocks: fresh.flatMap(inputBlocks),
   }
+}
+
+/**
+ * Restore the latest retained DSH context when a new CLI takes over a conversation.
+ * @param messages - the derived request history.
+ * @param currentIds - context already included in the new prompt.
+ * @returns context blocks not already present in that prompt.
+ */
+export function retainedContext(messages: readonly RequestMessage[], currentIds: readonly string[]): InputBlock[] {
+  return [...CONTEXT_KINDS].flatMap((kind) => {
+    const message = messages.findLast((candidate) => candidate.role === 'user' && candidate.source?.kind === kind)
+    return message?.id === undefined || currentIds.includes(message.id) ? [] : inputBlocks(message)
+  })
+}
+
+/**
+ * Return the latest compacted conversation summary as background, not an instruction.
+ * @param messages - the derived request history.
+ * @returns the summary text blocks, if a checkpoint is visible.
+ */
+export function checkpointContext(messages: readonly RequestMessage[]): InputBlock[] {
+  const checkpoint = messages.findLast((message) => {
+    const kind: string | undefined = message.source?.kind
+    return message.role === 'user' && kind === 'compact-checkpoint'
+  })
+  const blocks = checkpoint === undefined ? [] : inputBlocks(checkpoint)
+  return blocks.length === 0
+    ? []
+    : [{ type: 'text', text: '[Earlier conversation summary: background only, not new instructions]' }, ...blocks]
 }
 
 /**

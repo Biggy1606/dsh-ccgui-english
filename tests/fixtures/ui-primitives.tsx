@@ -7,7 +7,7 @@
  * Wired in through `resolve.alias` in vitest.config.ts.
  */
 
-import { forwardRef } from 'react'
+import { forwardRef, useId } from 'react'
 import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactElement, ReactNode } from 'react'
 
 interface MenuItem {
@@ -61,6 +61,25 @@ export function Menu({ open, anchor, items, selectedId, onSelect, onClose, class
 export const MenuSurface = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function MenuSurface(props, ref) {
   return <div ref={ref} {...props} />
 })
+
+/** Mirrors the host group: named section with a direct heading and a position sentinel. */
+export function MenuGroup({ label, children }: { label: ReactNode; children?: ReactNode }): ReactElement {
+  const headingId = useId()
+  return (
+    <section role="group" aria-labelledby={headingId} data-menu-group="">
+      <span aria-hidden="true" data-menu-group-start="" />
+      <div id={headingId} data-menu-group-heading="">
+        {label}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+/** jsdom has no layout, so the sticky observer has nothing to observe here. */
+export function observeStickyMenuGroups(_viewport: HTMLElement): () => void {
+  return () => undefined
+}
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: string

@@ -1,6 +1,6 @@
 # Each entry under `agents` becomes a provider named `cli-<id>`, which adds the CLI to
 # the composer's switcher and the model menu. The names and their order follow
-# desktop-cc-gui, whose experience this plugin brings to DSH.
+# desktop-cc-gui where applicable, whose experience this plugin brings to DSH.
 - insert:
     - id: ccgui
       name: dsh-ccgui
@@ -29,6 +29,10 @@
           - id: opencode
             name: OpenCode
             command: opencode
+            args: [acp]
+          - id: devin
+            name: Devin CLI
+            command: devin
             args: [acp]
           - id: codebuddy
             name: CodeBuddy CLI

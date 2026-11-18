@@ -133,11 +133,11 @@ describe('apply', () => {
     expect(inject).toEqual(['slots', 'modelDirectories', 'sessions'])
   })
 
-  it('registers the switcher, the model menu, the mode seat, the session mark and the settings section in their slots', () => {
+  it('registers the switcher, the favorite model section, the mode seat, the session mark and the settings section in their slots', () => {
     const h = harness()
     expect(h.registrations.map(({ options }) => [options.id, options.name, options.order])).toEqual([
       ['dsh-ccgui.switcher', 'conversation.input.left', undefined],
-      ['dsh-ccgui.model-menu', 'conversation.input.right', 1000],
+      ['dsh-ccgui.native-favorites', 'conversation.input.model.options', undefined],
       ['dsh-ccgui.session-mark', 'sidebar.session.row.leading', 20],
       ['dsh-ccgui.mode-seat', 'conversation.input.left', 1],
       ['dsh-ccgui.session-status-mark', 'sidebar.session.row.trailing', undefined],
@@ -167,7 +167,7 @@ describe('apply', () => {
     const dispose = h.effects[0]?.()
     const tag = document.head.querySelector('style[data-plugin="dsh-ccgui"]')
     expect(tag?.textContent).toContain('.dsh-cli-switcher')
-    expect(tag?.textContent).toContain('.dsh-cli-model-menu')
+    expect(tag?.textContent).toContain('.dsh-cli-model-trigger')
     expect(tag?.textContent).toContain('.dsh-cli-terminal-entry')
     expect(tag?.textContent).toContain('[data-row-key^="session:"]')
     expect(tag?.textContent).toContain('.dsh-ccgui-changes-row')
@@ -177,9 +177,9 @@ describe('apply', () => {
     expect(document.head.querySelector('style[data-plugin="dsh-ccgui"]')).toBeNull()
   })
 
-  it('offers the model menu only to sessions that are not addressed subagents', () => {
+  it('offers native favorite options only to sessions that are not addressed subagents', () => {
     const h = harness()
-    const menu = registered(h, 'dsh-ccgui.model-menu').options
+    const menu = registered(h, 'dsh-ccgui.native-favorites').options
     expect(menu.inject('s1')).toMatchObject({ available: true, session: h.session })
     h.subagent = { parent: 's0' }
     expect(menu.inject('s1')).toMatchObject({ available: false })
@@ -307,6 +307,23 @@ describe('CliSwitcher', () => {
   })
 })
 
+describe('CliSwitcher availability', () => {
+  it('stays hidden for an addressed subagent', () => {
+    const h = harness()
+    h.subagent = { parent: 's0' }
+    const { container } = renderSlot(h, 'dsh-ccgui.switcher')
+    expect(container.querySelector('button')).toBeNull()
+  })
+
+  it('disables a removed session and explains why', () => {
+    const h = harness()
+    renderSlot(h, 'dsh-ccgui.switcher')
+    h.session.set({ removed: true })
+    expect(switcher().hasAttribute('disabled')).toBe(true)
+    expect(switcher().getAttribute('title')).toBe('Session removed')
+  })
+})
+
 describe('CliSwitcher choosing', () => {
   it.each([
     ['a CLI on its default model', 'Codex CLI', { provider: 'cli-codex', model: 'default' }],
@@ -350,15 +367,17 @@ describe('CliSwitcher choosing', () => {
 })
 
 describe('CliSwitcher in a started session', () => {
-  it('locks and says how to change CLI', async () => {
+  it('stays usable and warns that the new CLI starts without the conversation', async () => {
     const h = harness()
     renderSlot(h, 'dsh-ccgui.switcher')
     h.session.set({ blank: false })
-    expect(switcher().hasAttribute('disabled')).toBe(true)
-    expect(switcher().getAttribute('title')).toBe('Start a new session to switch CLIs')
-    expect(switcher().querySelector('[data-icon="chevron-down"]')).toBeNull()
+    expect(switcher().hasAttribute('disabled')).toBe(false)
+    expect(switcher().getAttribute('title')).toBe('Switch CLI — the new CLI starts without this conversation')
+    expect(switcher().querySelector('[data-icon="chevron-down"]')).not.toBeNull()
     await userEvent.click(switcher())
-    expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.queryByRole('menu')).not.toBeNull()
+    await userEvent.click(screen.getByRole('menuitemradio', { name: 'Codex CLI' }))
+    expect(h.select).toHaveBeenCalledWith({ provider: 'cli-codex', model: 'default' })
   })
 })
 

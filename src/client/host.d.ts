@@ -25,6 +25,8 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
     className?: string
   }>
   export const MenuSurface: ForwardRefExoticComponent<HTMLAttributes<HTMLDivElement> & RefAttributes<HTMLDivElement>>
+  export const MenuGroup: ComponentType<{ label: ReactNode; children?: ReactNode }>
+  export function observeStickyMenuGroups(viewport: HTMLElement): () => void
   export const Button: ForwardRefExoticComponent<
     ButtonHTMLAttributes<HTMLButtonElement> & {
       variant?: 'primary' | 'ghost' | 'outline' | 'toolbar'

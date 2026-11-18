@@ -13,6 +13,7 @@ export default defineConfig({
   test: {
     // Component tests opt into jsdom per file with `// @vitest-environment jsdom`; the rest stay on node.
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    setupFiles: ['./tests/setup.ts'],
     testTimeout: 15_000,
     coverage: {
       provider: 'v8',

@@ -1,9 +1,9 @@
 /// <reference lib="dom" />
 
 /**
- * Browser half: a switcher and a model menu in the composer's tool row. The harness offers
- * slots for compact controls there, and both reuse the model directory, so they stay in
- * step with each other and with the harness's own model menu. A terminal button in the
+ * Browser half: a CLI switcher in the composer's tool row and favorite model shortcuts in the
+ * harness's own model menu. The switcher reuses the model directory, so it stays in step with
+ * that menu and with the CLI's modes beside it. A terminal button in the
  * session header (see terminal-entry.tsx) saves the trip through the right sidebar, a startup
  * script control beside it (see launch-script-entry.tsx) runs saved commands there,
  * "添加到对话" in file context menus (see add-to-chat.tsx) mentions a path in the composer, and
@@ -23,10 +23,12 @@ import { cliChoices, selectionForChoice } from './choices.ts'
 import { arrangeChoices, createCliPrefs } from './cli-prefs.ts'
 import type { CliPrefs, CliPrefsStorage } from './cli-prefs.ts'
 import type { DirectorySelection, DirectoryState } from './choices.ts'
+import { createFavoriteModels } from './favorite-models.ts'
+import type { FavoriteModels } from './favorite-models.ts'
 import { ProviderMark } from './marks.tsx'
 import { CliModeSeat } from './mode-seat.tsx'
-import { CliModelMenu } from './model-menu.tsx'
 import { MODEL_MENU_STYLES } from './model-menu-styles.ts'
+import { NATIVE_FAVORITES_STYLES, NativeFavorites } from './native-favorites.tsx'
 import { modeApiFor } from './mode-api.ts'
 import {
   SESSION_STATUS_SLOT,
@@ -37,6 +39,7 @@ import {
 import type { SessionList } from './session-status-mark.tsx'
 import { useStore } from './store.ts'
 import type { Store } from './store.ts'
+import { useRemoved } from './session-facts.ts'
 import { TERMINAL_ENTRY_STYLES, registerTerminalEntry } from './terminal-entry.tsx'
 import { registerFilesDefault } from './files-default.ts'
 import { registerChanges } from './changes/changes-register.ts'
@@ -61,6 +64,7 @@ import { WORKTREE_GROUP_STYLES } from './worktree/worktree-group-styles.ts'
 import { WORKTREE_STYLES } from './worktree/worktree-styles.ts'
 
 interface SwitcherInjected {
+  available: boolean
   directory: Store<DirectoryState>
   load: () => void
   select: (selection: DirectorySelection) => Promise<{ error?: { message?: string } }>
@@ -81,7 +85,12 @@ interface ClientContext {
   slots: {
     inject(name: string, add: () => unknown): void
     register(
-      options: { name: string; id: string; order?: number; inject(sessionId: string): unknown },
+      options: {
+        name: string
+        id: string
+        order?: number
+        inject(sessionId: string): unknown
+      },
       component: unknown,
     ): unknown
   }
@@ -100,14 +109,12 @@ interface ClientContext {
 }
 
 const SLOT = 'conversation.input.left'
-const MODEL_SLOT = 'conversation.input.right'
+const NATIVE_MODEL_OPTIONS_SLOT = 'conversation.input.model.options'
 /** Beside the CLI switcher: a CLI's mode belongs to that CLI session, read next to its name. */
 const MODE_SLOT = 'conversation.input.left'
 /** Right after the switcher, which registers with the default order. */
 const MODE_SEAT_ORDER = 1
 const SESSION_ROW_SLOT = 'sidebar.session.row.leading'
-/** Keeps the menu last in its slot, which is where the harness's own seat would be. */
-const MODEL_MENU_ORDER = 1000
 /** Runs after the harness's own marks, which outrank this one in the row's single cell. */
 const SESSION_MARK_ORDER = 20
 const WRAP_CLASS = 'dsh-cli-switcher-wrap'
@@ -161,7 +168,7 @@ const BROWSER_STORAGE: ScriptStorage & FeatureStorage & CliPrefsStorage & Expans
 function installStyles(): () => void {
   const tag = document.createElement('style')
   tag.dataset.plugin = 'dsh-ccgui'
-  tag.textContent = `${STYLES}${MODEL_MENU_STYLES}${TERMINAL_ENTRY_STYLES}${LAUNCH_SCRIPT_STYLES}${SESSION_TREE_STYLES}${SESSION_STATUS_STYLES}${SETTINGS_PAGE_STYLES}${CHANGES_STYLES}${WORKTREE_STYLES}${WORKTREE_GROUP_STYLES}`
+  tag.textContent = `${STYLES}${MODEL_MENU_STYLES}${NATIVE_FAVORITES_STYLES}${TERMINAL_ENTRY_STYLES}${LAUNCH_SCRIPT_STYLES}${SESSION_TREE_STYLES}${SESSION_STATUS_STYLES}${SETTINGS_PAGE_STYLES}${CHANGES_STYLES}${WORKTREE_STYLES}${WORKTREE_GROUP_STYLES}`
   document.head.append(tag)
   return () => {
     tag.remove()
@@ -198,9 +205,10 @@ function useChoose(state: DirectoryState, select: SwitcherInjected['select']) {
   return { error, choose }
 }
 
-function CliSwitcher({ directory, load, select, session, prefs }: CliSwitcherProps) {
+function CliSwitcher({ available, directory, load, select, session, prefs }: CliSwitcherProps) {
   const state = useStore(directory)
   const started = useStarted(session)
+  const removed = useRemoved(session)
   const prefsSnapshot = useStore(prefs)
   const [open, setOpen] = useState(false)
   const { error, choose } = useChoose(state, select)
@@ -212,16 +220,18 @@ function CliSwitcher({ directory, load, select, session, prefs }: CliSwitcherPro
   useEffect(() => {
     prefs.remember(listed)
   }, [prefs, listed])
-  if (!visible) return null
+  if (!visible || !available) return null
   // A hidden provider still names the button when a session is already on it.
   const items = arrangeChoices(listed, prefsSnapshot)
-  // A CLI does not know a conversation it did not take part in, so switching is
-  // for new sessions. The model menu can still change models within this CLI.
-  const hint = started ? 'Start a new session to switch CLIs' : (error ?? 'Switch CLI')
+  // A CLI does not know a conversation it did not take part in, so a switch after the first
+  // message starts the new CLI without the earlier turns. The switch is allowed (the host
+  // moves the session and the next message runs on the new CLI); the title warns instead of
+  // disabling the only way back to another CLI.
+  const hint = error ?? (started ? 'Switch CLI — the new CLI starts without this conversation' : 'Switch CLI')
   const label = error === undefined ? (currentLabel ?? NO_CHOICE_LABEL) : SWITCH_FAILED_LABEL
   return (
     <Menu
-      open={open && !started}
+      open={open}
       className={WRAP_CLASS}
       items={items.map((item) => ({ ...item, icon: <ProviderMark provider={item.id} size={14} /> }))}
       selectedId={currentId}
@@ -239,15 +249,15 @@ function CliSwitcher({ directory, load, select, session, prefs }: CliSwitcherPro
           type="button"
           className={BUTTON_CLASS}
           aria-label="Switch CLI"
-          title={hint}
-          disabled={started}
+          title={removed ? 'Session removed' : hint}
+          disabled={removed}
           onClick={() => {
             setOpen((value) => !value)
           }}
         >
           {currentId === undefined ? null : <ProviderMark provider={currentId} size={14} />}
           {label}
-          {started ? null : <IconChevronDownOutlineRegular size={14} />}
+          <IconChevronDownOutlineRegular size={14} />
         </button>
       }
     />
@@ -267,6 +277,7 @@ function SessionMark({ sessionId, list }: { readonly sessionId: string; readonly
 function directoryFace(ctx: ClientContext, sessionId: string): SwitcherInjected {
   const directory = ctx.modelDirectories.directoryFor(sessionId)
   return {
+    available: ctx.sessions.subagentAddress(sessionId) === undefined,
     directory: directory.store,
     load: () => {
       directory.load().catch(() => {
@@ -315,13 +326,13 @@ function registerSwitchableFeatures(ctx: ClientContext, settings: FeatureSetting
 export const inject = ['slots', 'modelDirectories', 'sessions']
 
 /**
- * Put the composer's controls in their seats: the CLI switcher, the model menu that takes
- * the harness's seat on CLI sessions only, and the CLI's modes in the seat that answers
- * "what may run".
+ * Put the composer's controls in their seats: the CLI switcher, favorite shortcuts in the
+ * harness's model menu, and the CLI's modes in the seat that answers "what may run".
  * @param ctx - the plugin's client context.
  * @param cliPrefs - the remembered CLI choice, which the switcher orders itself by.
+ * @param favorites - the browser's remembered model favorites.
  */
-function registerComposerSlots(ctx: ClientContext, cliPrefs: CliPrefs): void {
+function registerComposerSlots(ctx: ClientContext, cliPrefs: CliPrefs, favorites: FavoriteModels): void {
   ctx.slots.inject(SLOT, () =>
     ctx.slots.register(
       {
@@ -332,18 +343,14 @@ function registerComposerSlots(ctx: ClientContext, cliPrefs: CliPrefs): void {
       CliSwitcher,
     ),
   )
-  ctx.slots.inject(MODEL_SLOT, () =>
+  ctx.slots.inject(NATIVE_MODEL_OPTIONS_SLOT, () =>
     ctx.slots.register(
       {
-        name: MODEL_SLOT,
-        id: 'dsh-ccgui.model-menu',
-        order: MODEL_MENU_ORDER,
-        inject: (sessionId) => ({
-          ...directoryFace(ctx, sessionId),
-          available: ctx.sessions.subagentAddress(sessionId) === undefined,
-        }),
+        name: NATIVE_MODEL_OPTIONS_SLOT,
+        id: 'dsh-ccgui.native-favorites',
+        inject: (sessionId) => ({ ...directoryFace(ctx, sessionId), favorites }),
       },
-      CliModelMenu,
+      NativeFavorites,
     ),
   )
   ctx.slots.inject(SESSION_ROW_SLOT, () =>
@@ -397,13 +404,15 @@ function registerSessionMarks(ctx: ClientContext): void {
 }
 
 /**
- * Add the switcher and the model menu to the composer, and a terminal button to the header.
+ * Add the switcher and the favorite model section to the composer, and a terminal button to
+ * the header.
  * @param ctx - the plugin's client context.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(installStyles, 'ccgui: styles')
   const cliPrefs = createCliPrefs(BROWSER_STORAGE)
-  registerComposerSlots(ctx, cliPrefs)
+  const favorites = createFavoriteModels(BROWSER_STORAGE)
+  registerComposerSlots(ctx, cliPrefs, favorites)
   registerModeSeat(ctx)
   registerSessionMarks(ctx)
   const settings = createFeatureSettings(BROWSER_STORAGE)

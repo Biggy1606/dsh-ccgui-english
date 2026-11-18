@@ -9,7 +9,7 @@ DSH 插件：把外部 agent CLI（Claude Code、Codex、OpenCode 等）通过 A
 1. `pnpm check` 通过（格式、类型、lint、架构、死代码、类型覆盖率、测试覆盖率）。
 2. 改了 `src/` 就跑 `pnpm build`。
 3. 改了行为就在 `tests/` 里补测试或调整测试；修 bug 先写一个能复现的失败测试。
-4. 改了 `src/client/` 的界面或交互，跑 `node e2e/fake-cli.mjs`（启动方式见 README 的「开发」一节）。跑不了就明确说出来，不要声称已验证。
+4. 改了 `src/client/` 的界面或交互，跑 `node e2e/fake-cli.mjs`（启动方式见 README 的「Development and testing」一节）。跑不了就明确说出来，不要声称已验证。
 
 ## 检查不通过时
 
@@ -34,7 +34,7 @@ DSH 插件：把外部 agent CLI（Claude Code、Codex、OpenCode 等）通过 A
 
 - **不可变**：状态更新一律生成新对象、新数组、新 Set（`this.items = [...this.items, item]`），不要 `push` / `splice` / 直接修改参数。
 - **相对导入带 `.ts` 扩展名**：`import { x } from './foo.ts'`。
-- **语言**：代码注释用英文；面向用户的文字（错误信息、界面文案）用中文。
+- **语言**：代码注释用英文；面向用户的文字（错误信息、界面文案）用英文。
 - **注释写「为什么」**：说明约束、时序和取舍，不复述代码在做什么。
 - **错误**：交给宿主的错误抛 `LlmError(message, code)`，并带上 `{ cause }`；`catch` 的参数写成 `error: unknown`。不要写空的 `catch`，有意忽略的错误要在函数体里注释原因。
 - **常量**：超时、限制、文案等提成具名常量放在文件顶部。
@@ -57,7 +57,7 @@ lint 强制的上限：源码单文件 500 行、测试单文件 800 行（都�
 | `src/session/` | `CliSession` 的协作对象：连接（connect）、回合队列（turn-queue）、工具镜像（tool-mirror、drive-tool）、权限队列（permission-queue）、模型（model-state）、读取 step（read-step）、结束原因（outcomes） |
 | `src/stdio-transport.ts`、`src/transport.ts` | ACP 传输：子进程和协议细节 |
 | `src/session-registry.ts`、`src/adapter.ts`、`src/cli-tool.ts` | 会话注册、作为模型提供方接入、镜像工具 |
-| `src/client/` | 浏览器端 UI：CLI 切换器、模型菜单、图标 |
+| `src/client/` | 浏览器端 UI：CLI 切换器、原生模型菜单中的收藏区、图标 |
 
 ### 新增一个 CLI
 
@@ -65,13 +65,13 @@ lint 强制的上限：源码单文件 500 行、测试单文件 800 行（都�
 2. `src/client/provider-marks.ts` 的 `OWN_MARKS` 和 `ProviderMarkId` 里加上它的 id。
 3. `src/client/marks.tsx` 里画它的图标。
 4. `tests/cli-registry-consistency.test.ts` 会检查前三步是否一致，漏了哪一步它会直接说出来。
-5. 在 README 开头的 CLI 状态表和「审批与停止行为」表里补上实测结果，没测过就写「尚未验证」。
+5. 在 README 的「Installation and OpenCode」和「Permissions and stopping」两节里补上实测结果，没测过就写「尚未验证」。
 
 只要 CLI 通过 ACP 通信，就不需要写针对它的代码。行为上的差异按行为处理（参考 `src/tool-record.ts` 对代码块外壳的处理），不要写 `if (cli === 'xxx')`。
 
 ## 发版
 
-只在用户要求时发版。流程见 README「开发」一节的「发版」，要点：
+只在用户要求时发版。流程见 README「Development and testing」一节末尾的发版说明，要点：
 
 - 推送 `v*` 标签触发 `.github/workflows/release.yml`；合并到 main 不发版。
 - 在 main 上合并完成后运行 `npm version <patch|minor|major> -m "chore: release v%s"`，再 `git push --follow-tags`。不要手改版本号再单独打标签。

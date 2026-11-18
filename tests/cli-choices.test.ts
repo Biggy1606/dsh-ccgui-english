@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cliChoices, cliModels, selectionForChoice } from '../src/client/choices.ts'
+import { cliChoices, selectionForChoice } from '../src/client/choices.ts'
 import type { DirectoryState } from '../src/client/choices.ts'
 
 const DEEPSEEK = {
@@ -85,50 +85,6 @@ describe('cliChoices', () => {
 
   it('does not name a provider that is not in the catalog', () => {
     expect(cliChoices(state({ current: { provider: 'gone', model: 'x' } })).currentLabel).toBeUndefined()
-  })
-})
-
-describe('cliModels', () => {
-  const onOpenCode = { provider: 'cli-opencode', model: 'beam' }
-
-  it('lists only the models of the CLI the session is on', () => {
-    expect(cliModels(state({ current: onOpenCode }))?.rows).toEqual(OPENCODE.models)
-  })
-
-  it('says which CLI and which model are in use', () => {
-    const models = cliModels(state({ current: onOpenCode }))
-    expect(models?.provider).toBe('cli-opencode')
-    expect(models?.name).toBe('OpenCode')
-    expect(models?.currentId).toBe('beam')
-    expect(models?.currentName).toBe('Beam')
-  })
-
-  // Any other provider keeps the harness's menu, which also offers its effort levels.
-  it('steps aside for a provider that is not a CLI', () => {
-    expect(cliModels(state())).toBeUndefined()
-  })
-
-  it('steps aside until the session has a model', () => {
-    expect(cliModels(state({ current: null }))).toBeUndefined()
-  })
-
-  it('steps aside for a CLI that is not in the catalog', () => {
-    expect(cliModels(state({ current: { provider: 'cli-gone', model: 'default' } }))).toBeUndefined()
-  })
-
-  it('names no current model when the selected one is no longer listed', () => {
-    const models = cliModels(state({ current: { provider: 'cli-opencode', model: 'gone' } }))
-    expect(models?.currentId).toBeUndefined()
-    expect(models?.currentName).toBeUndefined()
-  })
-
-  // Before a CLI has answered, its only row is a stand-in that carries the CLI's own name.
-  it('knows a CLI has not reported its models yet', () => {
-    expect(cliModels(state({ current: { provider: 'cli-codex', model: 'default' } }))?.listed).toBe(false)
-  })
-
-  it('knows a CLI has reported its models', () => {
-    expect(cliModels(state({ current: onOpenCode }))?.listed).toBe(true)
   })
 })
 
