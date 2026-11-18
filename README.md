@@ -13,20 +13,21 @@ Use Claude Code, Kimi, Codex, PI, OMP, OpenCode, Devin, and other ACP-compatible
 
 Requires DSH `>=0.2.2-rc.1 <0.3.0` and a working, authenticated CLI. Install `opencode` separately and make sure it is on the path available to DSH. OpenCode communicates through `opencode acp`; configure its account and model using OpenCode's own settings.
 
-1. In DSH, open **Plugins**, choose **Add plugin**, enter `dsh-ccgui`, and install it.
-2. If instructed to restart DSH, quit it completely and reopen it rather than choosing immediate activation; otherwise old and new code may be mixed in one process.
-3. Start a session, select **OpenCode** from the CLI menu beside the composer, and send a message. Its available models appear in the model menu once the CLI has started. The model menu lists every provider the deployment offers, so the same menu moves the session to another CLI or back to a DSH provider. A CLI that starts after the conversation began does not receive the earlier messages; when DSH has a visible compaction summary, it is sent to the CLI as background.
-
-Alternatively, install via the appropriate profile:
+The plugin installs from GitHub. The `dist` branch carries the built `lib/` output; the source branches and tags do not, so always include the `#dist` ref:
 
 ```sh
 # macOS desktop: quit the app completely first
-"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add dsh-ccgui@1.0.6
+"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add github:Biggy1606/dsh-ccgui-english#dist
 # DSH web
-dsh plugin --profile web add dsh-ccgui@1.0.6
+dsh plugin --profile web add github:Biggy1606/dsh-ccgui-english#dist
 ```
 
-Replace `add ...` with `remove dsh-ccgui` to uninstall. To install from a local checkout, run `pnpm install && pnpm run build`, then provide the checkout path in **Add plugin** or instead of the package name in the command above. Peer dependency warnings from pnpm can be ignored.
+Alternatively, in DSH open **Plugins**, choose **Add plugin**, enter `github:Biggy1606/dsh-ccgui-english#dist`, and install it. Then:
+
+1. If instructed to restart DSH, quit it completely and reopen it rather than choosing immediate activation; otherwise old and new code may be mixed in one process.
+2. Start a session, select **OpenCode** from the CLI menu beside the composer, and send a message. Its available models appear in the model menu once the CLI has started. The model menu lists every provider the deployment offers, so the same menu moves the session to another CLI or back to a DSH provider. A CLI that starts after the conversation began does not receive the earlier messages; when DSH has a visible compaction summary, it is sent to the CLI as background.
+
+Replace `add ...` with `remove dsh-ccgui` to uninstall. Run the `add ...` command again to upgrade to the latest `dist` build. To install from a local checkout instead, run `pnpm install && pnpm run build`, then provide the checkout path in **Add plugin** or instead of the package name in the command above.
 
 The included Claude, Kimi, Codex and PI adapters are fetched with `npx`; OMP, OpenCode and Devin must be installed separately and available on DSH's PATH. Devin uses `devin acp`; a basic text-only ACP exchange succeeded with Devin CLI 3000.11.234, but approvals and stopping behavior have not yet been verified. CodeBuddy is disabled by default and has not been verified with a real account. CLI account usage and charges follow that CLI's own configuration.
 
@@ -94,7 +95,21 @@ node e2e/fake-cli.mjs
 
 If the DSH checkout has no `.git`, build it with `DSH_CLIENT_COMMIT_HASH=0000000`. Real-CLI tests, such as `E2E_CLI=OpenCode E2E_CLI_ID=opencode node e2e/real-cli.mjs`, use the CLI account and can incur charges and leave test sessions in its history. If required UI testing cannot be run, say so rather than claiming verification.
 
-Releases occur only when requested: a `v*` tag triggers the [release workflow](.github/workflows/release.yml), which checks, publishes to npm using Trusted Publishing, and creates a GitHub Release. After merging to main, use `npm version <patch|minor|major> -m "chore: release v%s"` and `git push --follow-tags`; merging alone does not publish.
+Releases occur only when requested. This fork does not publish to npm; the release workflow's Trusted Publishing stays bound to the upstream package, so keep Actions disabled or do not rely on it. After merging to main, run `npm version <patch|minor|major> -m "chore: release v%s"` and `git push --follow-tags`, rebuild the `dist` branch so `github:...#dist` installs the release (see below), and create the GitHub Release from the new tag.
+
+To rebuild `dist` from a clean tree of the release commit:
+
+```sh
+git checkout -B dist <tag>
+pnpm install && pnpm build
+# remove the "prepare" script from package.json, then:
+git add -f lib package.json
+git commit -m "chore: dist build of <tag>"
+git push -f origin dist
+git checkout main
+```
+
+`dist` is a build artifact ref; it is force-pushed on each release and carries no development history.
 
 ## License and acknowledgments
 
