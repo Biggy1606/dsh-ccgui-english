@@ -54,14 +54,15 @@ type Body = Readonly<Record<string, unknown>>
  * @throws GitRequestError for anything but a plain object.
  */
 export function asBody(value: unknown): Body {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new GitRequestError('请求格式无效')
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    throw new GitRequestError('Invalid request format')
   return value as Body
 }
 
 function text(body: Body, key: string): string {
   const value = body[key]
   if (typeof value !== 'string' || value === '' || value.length > MAX_TEXT || value.includes('\0')) {
-    throw new GitRequestError(`缺少或无效的参数：${key}`)
+    throw new GitRequestError(`Missing or invalid parameter: ${key}`)
   }
   return value
 }
@@ -69,22 +70,23 @@ function text(body: Body, key: string): string {
 /** Relative, without `..` segments, so git never reaches outside the repository. */
 function repoPath(value: unknown): string {
   if (typeof value !== 'string' || value === '' || value.includes('\0') || isAbsolute(value)) {
-    throw new GitRequestError('文件路径无效')
+    throw new GitRequestError('Invalid file path')
   }
-  if (value.split(/[\\/]/).includes('..')) throw new GitRequestError('文件路径无效')
+  if (value.split(/[\\/]/).includes('..')) throw new GitRequestError('Invalid file path')
   return value
 }
 
 function paths(body: Body, key: string): string[] {
   const value = body[key]
   if (value === undefined) return []
-  if (!Array.isArray(value) || value.length > MAX_PATHS) throw new GitRequestError(`缺少或无效的参数：${key}`)
+  if (!Array.isArray(value) || value.length > MAX_PATHS)
+    throw new GitRequestError(`Missing or invalid parameter: ${key}`)
   return value.map(repoPath)
 }
 
 function diffSide(body: Body): DiffSide {
   const side = DIFF_SIDES.find((candidate) => candidate === body.side)
-  if (side === undefined) throw new GitRequestError('缺少或无效的参数：side')
+  if (side === undefined) throw new GitRequestError('Missing or invalid parameter: side')
   return side
 }
 
@@ -116,13 +118,13 @@ async function write(spawn: Spawn, root: string, operation: GitOperation, body: 
     case 'create-branch':
       return createBranch(spawn, root, text(body, 'branch'))
     default:
-      throw new GitRequestError(`不支持的操作：${operation}`)
+      throw new GitRequestError(`Unsupported operation: ${operation}`)
   }
 }
 
 function worktreeRequest(body: Body): WorktreeRequest {
   const path = text(body, 'path')
-  if (!isAbsolute(path)) throw new GitRequestError('Worktree 位置必须是绝对路径')
+  if (!isAbsolute(path)) throw new GitRequestError('Worktree location must be an absolute path')
   const branch = text(body, 'branch')
   switch (body.mode) {
     case 'new':
@@ -132,11 +134,11 @@ function worktreeRequest(body: Body): WorktreeRequest {
     case 'pr': {
       const input = text(body, 'pr')
       const pr = parsePrInput(input)
-      if (pr === undefined) throw new GitRequestError(`无法识别的 PR：${input}`)
+      if (pr === undefined) throw new GitRequestError(`Unrecognized PR: ${input}`)
       return { mode: 'pr', pr, branch, path }
     }
     default:
-      throw new GitRequestError('缺少或无效的参数：mode')
+      throw new GitRequestError('Missing or invalid parameter: mode')
   }
 }
 
@@ -146,7 +148,7 @@ async function diff(spawn: Spawn, root: string, body: Body): Promise<unknown> {
   // An untracked diff reads the file itself, outside git's object store, so it is limited to
   // the files the status lists; anything else could follow a symlink out of the repository.
   if (side === 'untracked' && !(await isUntracked(spawn, root, path))) {
-    throw new GitRequestError('只能查看仓库内未跟踪文件的差异')
+    throw new GitRequestError('Only diffs of untracked files within the repository can be viewed')
   }
   return readDiff(spawn, root, {
     path,
@@ -165,7 +167,7 @@ async function diff(spawn: Spawn, root: string, body: Body): Promise<unknown> {
  */
 export async function runOperation(spawn: Spawn, operation: GitOperation, body: Body): Promise<unknown> {
   const cwd = text(body, 'cwd')
-  if (!isAbsolute(cwd)) throw new GitRequestError('工作目录必须是绝对路径')
+  if (!isAbsolute(cwd)) throw new GitRequestError('Working directory must be an absolute path')
   const root = await repoRoot(spawn, cwd)
   if (root === undefined) return NOT_A_REPO
   if (operation === 'branches') return readBranches(spawn, root)

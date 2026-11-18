@@ -14,20 +14,36 @@ export interface UpcomingFeature {
   readonly description: string
 }
 
-const INTRO = '正在开发的功能，会陆续在这里开放。'
-const SOON_LABEL = '即将开放…'
+const INTRO = 'Features in development will become available here.'
+const SOON_LABEL = 'Coming soon…'
 const SOON_CLASS = 'dsh-ccgui-more-soon'
 
 /** In the order the settings page lists them. */
 export const UPCOMING_FEATURES: readonly UpcomingFeature[] = [
-  { id: 'autoRename', title: '会话自动命名', description: '根据对话内容自动生成会话标题，不用手动改名。' },
-  { id: 'worktree', title: 'WorkTree', description: '为每个会话建立独立的 Git 工作树，多个任务互不干扰。' },
-  { id: 'gitInfo', title: 'Git 信息自动生成', description: '根据改动自动生成提交信息和变更说明。' },
-  { id: 'promptBoost', title: '增强提示词', description: '把一句话扩写成完整的提示词，减少来回补充背景。' },
+  {
+    id: 'autoRename',
+    title: 'Automatic session naming',
+    description: 'Generate session titles from the conversation automatically.',
+  },
+  {
+    id: 'worktree',
+    title: 'WorkTree',
+    description: 'Create a separate Git worktree for each session to isolate tasks.',
+  },
+  {
+    id: 'gitInfo',
+    title: 'Automatic Git messages',
+    description: 'Generate commit messages and change descriptions from your changes.',
+  },
+  {
+    id: 'promptBoost',
+    title: 'Prompt enhancement',
+    description: 'Expand a short request into a complete prompt with context.',
+  },
   {
     id: 'accountQuota',
-    title: 'AI 账号限额提示',
-    description: '显示各 AI 账号的剩余额度和重置时间，快用完时提前提醒。',
+    title: 'AI account quota alerts',
+    description: 'Show remaining quota and reset times for AI accounts, with low-quota alerts.',
   },
 ]
 

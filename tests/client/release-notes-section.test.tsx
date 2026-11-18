@@ -33,11 +33,11 @@ afterEach(() => {
 describe('ReleaseNotesSection', () => {
   it('opens on the newest release, one version per page', () => {
     render(<ReleaseNotesSection notes={NOTES} />)
-    expect(screen.getByRole('group', { name: 'v2.0.0 版本记录' })).toBeDefined()
+    expect(screen.getByRole('group', { name: 'v2.0.0 release notes' })).toBeDefined()
     expect(screen.getByText('2026-12-01')).toBeDefined()
     expect(screen.getByText('✨ 新功能')).toBeDefined()
-    expect(screen.getByText('新菜单：')).toBeDefined()
-    expect(screen.getByText('第 1 / 2 页')).toBeDefined()
+    expect(screen.getByText('新菜单:')).toBeDefined()
+    expect(screen.getByText('Page 1 of 2')).toBeDefined()
     expect(screen.queryByText('修好启动。')).toBeNull()
     expect(screen.queryByText('只改了文档。')).toBeDefined()
   })
@@ -45,21 +45,21 @@ describe('ReleaseNotesSection', () => {
   it('renders backticked commands as code', () => {
     render(<ReleaseNotesSection notes={NOTES} />)
     expect(screen.getByText('npx').tagName).toBe('CODE')
-    expect(screen.getByText('npx').closest('li')?.textContent).toBe('新菜单：用 npx 启动。')
+    expect(screen.getByText('npx').closest('li')?.textContent).toBe('新菜单: 用 npx 启动。')
   })
 
   it('steps between releases and stops at both ends', async () => {
     render(<ReleaseNotesSection notes={NOTES} />)
-    expect(button('上一页').getAttribute('disabled')).not.toBeNull()
-    expect(button('下一页').getAttribute('disabled')).toBeNull()
-    await userEvent.click(button('下一页'))
-    expect(screen.getByRole('group', { name: 'v1.0.0 版本记录' })).toBeDefined()
+    expect(button('Previous page').getAttribute('disabled')).not.toBeNull()
+    expect(button('Next page').getAttribute('disabled')).toBeNull()
+    await userEvent.click(button('Next page'))
+    expect(screen.getByRole('group', { name: 'v1.0.0 release notes' })).toBeDefined()
     expect(screen.getByText('修好启动。')).toBeDefined()
-    expect(screen.getByText('第 2 / 2 页')).toBeDefined()
-    expect(button('下一页').getAttribute('disabled')).not.toBeNull()
-    expect(button('上一页').getAttribute('disabled')).toBeNull()
-    await userEvent.click(button('上一页'))
-    expect(screen.getByText('第 1 / 2 页')).toBeDefined()
+    expect(screen.getByText('Page 2 of 2')).toBeDefined()
+    expect(button('Next page').getAttribute('disabled')).not.toBeNull()
+    expect(button('Previous page').getAttribute('disabled')).toBeNull()
+    await userEvent.click(button('Previous page'))
+    expect(screen.getByText('Page 1 of 2')).toBeDefined()
   })
 
   it('jumps to a release from its dot and marks the current page', async () => {
@@ -74,21 +74,21 @@ describe('ReleaseNotesSection', () => {
 
   it('marks the release the running build belongs to', async () => {
     render(<ReleaseNotesSection notes={NOTES} currentVersion="1.0.0" />)
-    expect(screen.queryByText('当前版本')).toBeNull()
-    await userEvent.click(button('下一页'))
-    expect(screen.getByText('当前版本')).toBeDefined()
+    expect(screen.queryByText('Current version')).toBeNull()
+    await userEvent.click(button('Next page'))
+    expect(screen.getByText('Current version')).toBeDefined()
   })
 
   it('defaults to the bundled notes', () => {
     const newest = RELEASE_NOTES[0]
     if (newest === undefined) throw new Error('no bundled release notes')
     render(<ReleaseNotesSection />)
-    expect(screen.getByRole('group', { name: `v${newest.version} 版本记录` })).toBeDefined()
+    expect(screen.getByRole('group', { name: `v${newest.version} release notes` })).toBeDefined()
   })
 
   it('says so when there is no release to show', () => {
     render(<ReleaseNotesSection notes={[]} />)
-    expect(screen.getByText('还没有版本记录。')).toBeDefined()
+    expect(screen.getByText('No release notes yet.')).toBeDefined()
     expect(screen.queryByRole('group')).toBeNull()
   })
 

@@ -200,7 +200,7 @@ describe('CliBridge routing and model listing', () => {
     expect(select).toHaveBeenCalledWith({ provider: 'cli-fake', model: DEFAULT_MODEL_ID })
     await vi.waitFor(() => expect(h.modelUpdates).toEqual(['cli-fake']), WAIT)
     await expect(onlyAdapter(h).listModels('cli-fake')).resolves.toEqual([
-      { provider: 'cli-fake', id: DEFAULT_MODEL_ID, name: 'Fake Small（默认）' },
+      { provider: 'cli-fake', id: DEFAULT_MODEL_ID, name: 'Fake Small (default)' },
       { provider: 'cli-fake', id: 'fake-large', name: 'Fake Large' },
     ])
     // The probe runs in a fixed directory under the harness home, started through ctx.subprocess.
@@ -499,7 +499,7 @@ describe('CliBridge sessions', () => {
     const turn = collect(onlyAdapter(h).stream(request({ messages: [user('m1', 'HANG')] })))
     await vi.waitFor(() => expect(h.subprocess.spawned).toHaveLength(1), WAIT)
     await fiber.dispose()
-    await expect(turn).rejects.toThrow('Fake CLI 已停止：dsh-ccgui 插件已停止或重新加载')
+    await expect(turn).rejects.toThrow('Fake CLI stopped: The dsh-ccgui plugin stopped or reloaded')
     await h.subprocess.allExited()
   })
 

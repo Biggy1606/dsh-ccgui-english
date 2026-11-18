@@ -109,7 +109,7 @@ describe('registerAddToChat', () => {
   it('labels the action like CC GUI and gives it a plus icon', () => {
     const { contributions, registrations } = harness()
     const action = actionFor(contributions, 'file', { sessionId: 's1', path: '/repo/a.ts' })
-    expect(action.label).toBe('添加到对话')
+    expect(action.label).toBe('Add to chat')
     expect(action.icon).toEqual({ key: 'dsh-ccgui.add-to-chat' })
     const Icon = registrationNamed(registrations, 'contextMenu.icon').component as ComponentType
     const { container } = render(<Icon />)

@@ -74,8 +74,10 @@ describe('mode API', () => {
   })
 
   it('refuses a reply it cannot read', async () => {
-    await expect(createModeApi(poster({ success: 'yes' }), 'dsh-1').read('cli-x')).rejects.toThrow('切换 CLI 模式失败')
-    await expect(createModeApi(poster(null), 'dsh-1').read('cli-x')).rejects.toThrow('模式接口')
+    await expect(createModeApi(poster({ success: 'yes' }), 'dsh-1').read('cli-x')).rejects.toThrow(
+      'Failed to change CLI mode',
+    )
+    await expect(createModeApi(poster(null), 'dsh-1').read('cli-x')).rejects.toThrow('mode API')
   })
 
   // A control reads in an effect, so a fresh object per render would make it read again

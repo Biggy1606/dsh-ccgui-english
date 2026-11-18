@@ -152,7 +152,7 @@ describe('WorktreeTree: rows', () => {
     const worktree = group().getByRole('treeitem', { name: /feat\/a/ })
     expect(worktree.getAttribute('aria-expanded')).toBe('false')
     fireEvent.click(worktree)
-    expect(group().getByRole('treeitem', { name: /修复登录/ }).textContent).toContain('5分钟')
+    expect(group().getByRole('treeitem', { name: /修复登录/ }).textContent).toContain('5 min ago')
     expect(group().queryByText('旧的')).toBeNull()
     expect(storage.setItem).toHaveBeenLastCalledWith(
       EXPANSION_STORAGE_KEY,
@@ -171,10 +171,10 @@ describe('WorktreeTree: rows', () => {
     const worktree = group().getByRole('treeitem', { name: /feat\/a/ })
     fireEvent.contextMenu(worktree, { clientX: 7, clientY: 8 })
     expect(actions.worktreeMenu).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'a' }), { x: 7, y: 8 })
-    fireEvent.click(group().getByRole('button', { name: '在“feat/a”中新建会话' }))
+    fireEvent.click(group().getByRole('button', { name: 'New session in “feat/a”' }))
     expect(actions.newSession).toHaveBeenCalledWith('a')
     expect(worktree.getAttribute('aria-expanded')).toBe('true')
-    fireEvent.click(group().getByRole('button', { name: '新建 Worktree' }))
+    fireEvent.click(group().getByRole('button', { name: 'New Worktree' }))
     expect(actions.newWorktree).toHaveBeenCalledWith(ITEMS[0])
     fireEvent.keyDown(worktree, { key: ' ' })
     expect(worktree.getAttribute('aria-expanded')).toBe('false')
@@ -193,7 +193,7 @@ describe('WorktreeTree: rows', () => {
 
   it('says when a worktree has no sessions', async () => {
     setup({ sessions: {}, stored: JSON.stringify({ groups: { app: true }, worktrees: { a: true } }) })
-    expect(await group().findByText('暂无会话')).toBeTruthy()
+    expect(await group().findByText('No sessions yet')).toBeTruthy()
   })
 
   it('updates relative times by the minute', async () => {
@@ -203,7 +203,7 @@ describe('WorktreeTree: rows', () => {
     act(() => {
       vi.advanceTimersByTime(60_000)
     })
-    expect(session.textContent).toContain('6分钟')
+    expect(session.textContent).toContain('6 min ago')
   })
 })
 

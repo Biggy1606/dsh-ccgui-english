@@ -125,13 +125,13 @@ function readVariableLaunch(shim: string): ShimLaunch | undefined {
 
 function unsupported(shim: string): Error {
   return new Error(
-    `无法在不经过命令行的情况下启动 ${shim}。请在配置里把这个 CLI 的 command 改成 .exe 或它的 node 脚本的完整路径。`,
+    `Cannot start ${shim} without a shell. Set this CLI’s command in the configuration to the full path to its .exe or Node script.`,
   )
 }
 
 function missingInterpreter(interpreter: string, shim: string): Error {
   return new Error(
-    `找不到 ${interpreter}：启动 ${shim} 需要它。请先安装 ${interpreter} 并加入 PATH，或在配置里把这个 CLI 的 command 改成 .exe 的完整路径。`,
+    `Cannot find ${interpreter}, which is required to start ${shim}. Install ${interpreter} and add it to PATH, or set this CLI’s command in the configuration to the full path to its .exe.`,
   )
 }
 

@@ -34,10 +34,10 @@ interface PendingDiscard {
   readonly entries: readonly ChangeEntry[]
 }
 
-const NO_DIRECTORY = '这个会话还没有工作目录'
-const NOT_A_REPO = '当前工作区不是 Git 仓库'
-const AI_LABEL = 'AI 生成提交信息'
-const AI_UNAVAILABLE = '暂未开放，敬请期待'
+const NO_DIRECTORY = 'This session has no working directory yet'
+const NOT_A_REPO = 'The current workspace is not a Git repository'
+const AI_LABEL = 'Generate commit message with AI'
+const AI_UNAVAILABLE = 'Not available yet'
 
 function useCwd(list: CwdList, sessionId: string): string | undefined {
   const subscribe = useCallback((listener: () => void) => list.subscribe(listener), [list])
@@ -47,8 +47,8 @@ function useCwd(list: CwdList, sessionId: string): string | undefined {
 function discardText({ entries }: PendingDiscard): string {
   const [only] = entries
   return entries.length === 1 && only !== undefined
-    ? `确定要撤销对“${only.path}”的更改吗？更改将无法恢复。`
-    : `确定要撤销这 ${String(entries.length)} 个文件的全部更改吗？更改将无法恢复。`
+    ? `Discard changes to “${only.path}”? This cannot be undone.`
+    : `Discard all changes to these ${String(entries.length)} files? This cannot be undone.`
 }
 
 function DiscardDialog({
@@ -64,13 +64,13 @@ function DiscardDialog({
     <Modal
       open={pending !== undefined}
       onClose={onClose}
-      title="撤销更改"
-      closeLabel="关闭"
+      title="Discard changes"
+      closeLabel="Close"
       description={pending === undefined ? undefined : discardText(pending)}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            取消
+            Cancel
           </Button>
           <Button
             variant="primary"
@@ -78,7 +78,7 @@ function DiscardDialog({
               if (pending !== undefined) onConfirm(pending)
             }}
           >
-            确定
+            Confirm
           </Button>
         </>
       }
@@ -131,8 +131,8 @@ function CommitBox({
       <textarea
         className={CLS.commitInput}
         rows={2}
-        placeholder="提交信息…"
-        aria-label="提交信息"
+        placeholder="Commit message…"
+        aria-label="Commit message"
         value={state.message}
         onChange={(event) => {
           actions.setMessage(event.target.value)
@@ -143,7 +143,7 @@ function CommitBox({
       />
       <div className={CLS.commitRow}>
         <button type="button" className={CLS.commitButton} disabled={!canCommit(state)} onClick={actions.commit}>
-          {state.busy === 'commit' ? '提交中…' : `提交 (${String(count)})`}
+          {state.busy === 'commit' ? 'Committing…' : `Commit (${String(count)})`}
         </button>
         <AiCommitButton anchor={box} />
       </div>
@@ -169,7 +169,7 @@ function ErrorBanner({
     <div className={CLS.error} role="alert">
       <span>{error}</span>
       <button type="button" className={CLS.groupAction} onClick={onDismiss}>
-        关闭
+        Close
       </button>
     </div>
   )
@@ -232,7 +232,7 @@ function Loaded({ api, state, actions }: ViewProps): ReactElement {
   const { answer, diff } = state
   if (answer === undefined) {
     return state.error === undefined ? (
-      <div className={CLS.empty}>加载中…</div>
+      <div className={CLS.empty}>Loading…</div>
     ) : (
       <div className={CLS.error}>{state.error}</div>
     )

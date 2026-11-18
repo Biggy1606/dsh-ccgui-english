@@ -78,7 +78,7 @@ async function answerPermission(
   { callId, ask, signal }: Asking,
 ): Promise<void> {
   const record = tools.get(permission.acpId)
-  const reason = record === undefined ? `${label} 请求执行一个操作。` : permissionReason(record)
+  const reason = record === undefined ? `${label} requested permission to perform an action.` : permissionReason(record)
   const askSignal = AbortSignal.any([signal, turnSignal()])
   // A failing approval service must not leave the CLI blocked; `unavailable` rejects.
   const outcome = await ask({ reason, ...(callId === undefined ? {} : { callId }) }, askSignal).catch(

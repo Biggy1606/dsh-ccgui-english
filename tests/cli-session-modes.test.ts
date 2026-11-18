@@ -172,7 +172,7 @@ describe('CliSession switching mode', () => {
     fake.configOptions = [modelOption, modeOption]
     await collect(session.stream({ messages: [user('1', 'hi')] }))
     fake.setConfigError = new Error('broken pipe')
-    await expect(session.switchMode('plan')).rejects.toThrow(/OpenCode 无法切换到模式 plan：broken pipe/)
+    await expect(session.switchMode('plan')).rejects.toThrow(/OpenCode could not switch to mode plan: broken pipe/)
   })
 })
 
@@ -199,7 +199,7 @@ describe('CliSession refused mode', () => {
     fake.configOptions = [modelOption, modeOption]
     fake.setConfigError = new Error('plan is not allowed here')
     const chunks = await collect(session.stream({ messages: [user('1', 'hi')] }))
-    expect(textOf(chunks)).toContain('无法切换到模式 plan')
+    expect(textOf(chunks)).toContain('could not switch to mode plan')
     expect(textOf(chunks)).toContain('plan is not allowed here')
     expect(finishOf(chunks)?.reason.kind).toBe('stop')
     expect(fake.prompts).toHaveLength(1)
@@ -222,7 +222,7 @@ describe('CliSession refused mode', () => {
     fake.configOptions = [modelOption, modeOption]
     const chunks = await collect(session.stream({ messages: [user('1', 'hi')] }))
     expect(fake.setConfigCalls).toEqual([])
-    expect(textOf(chunks)).toContain('无法切换到模式 yolo')
+    expect(textOf(chunks)).toContain('could not switch to mode yolo')
     expect(onModeRefused).toHaveBeenCalledWith('yolo')
     expect(session.pendingMode).toBeUndefined()
   })
@@ -241,7 +241,7 @@ describe('CliSession refused mode', () => {
     expect(finish?.reason).toMatchObject({ kind: 'error', failure: { code: 'CLI_REFUSAL' } })
     const message = finish?.reason.kind === 'error' ? finish.reason.failure.message : ''
     expect(message).toContain('免费额度已用完')
-    expect(message).not.toContain('无法切换到模式')
+    expect(message).not.toContain('could not switch to mode')
   })
 
   it('forgets a live switch the CLI refused, so the next message does not retry it', async () => {

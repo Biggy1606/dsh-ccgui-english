@@ -117,7 +117,7 @@ describe('registerTerminalEntry', () => {
   it('toggles the terminal of its own session when clicked', async () => {
     const sidebar = fakeSidebar()
     renderEntry(sidebar, 's7')
-    const button = screen.getByRole('button', { name: '切换终端' })
+    const button = screen.getByRole('button', { name: 'Toggle terminal' })
     expect(button.querySelector('svg')).not.toBeNull()
     await userEvent.click(button)
     expect(sidebar.tabsIn).toHaveBeenCalledWith('s7')

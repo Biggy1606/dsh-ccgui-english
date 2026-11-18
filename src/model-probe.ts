@@ -100,7 +100,7 @@ export async function probeModels(
   const transport = open(IGNORING_HANDLERS)
   const { promise: timedOut, reject } = Promise.withResolvers<never>()
   const timer = setTimeout(() => {
-    reject(new Error('超时，CLI 没有响应'))
+    reject(new Error('Timed out; the CLI did not respond'))
   }, timeoutMs)
   const cleanupLimitMs = Math.min(CLEANUP_LIMIT_MS, timeoutMs / 2)
   try {

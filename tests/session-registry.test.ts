@@ -595,6 +595,6 @@ describe('ptcWrapFor', () => {
     const { registry } = setup({ composedPreset: () => 'ptc', ptcWrap: () => undefined })
     const refuse = () => registry.ptcWrapFor('cli-x', 'dsh-1')
     expect(refuse).toThrow(expect.objectContaining({ code: 'CLI_WRONG_PRESET' }))
-    expect(refuse).toThrow('X CLI 不支持当前的 PTC 运行时')
+    expect(refuse).toThrow('X CLI does not support the current PTC runtime')
   })
 })

@@ -72,7 +72,7 @@ describe('shellInput', () => {
 
 describe('draftProblem', () => {
   it('asks for a command and enforces the limits', () => {
-    expect(draftProblem({ name: 'x', command: '  ' })).toBe('请填写要运行的命令')
+    expect(draftProblem({ name: 'x', command: '  ' })).toBe('Enter a command to run')
     expect(draftProblem({ name: '', command: 'x'.repeat(MAX_COMMAND_LENGTH + 1) })).toContain(`${MAX_COMMAND_LENGTH}`)
     expect(draftProblem({ name: 'n'.repeat(MAX_NAME_LENGTH + 1), command: 'ls' })).toContain(`${MAX_NAME_LENGTH}`)
     expect(draftProblem({ name: '', command: 'ls' })).toBeUndefined()

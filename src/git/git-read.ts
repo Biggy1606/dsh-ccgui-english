@@ -98,7 +98,7 @@ export async function isUntracked(spawn: Spawn, root: string, path: string): Pro
     spawn,
     root,
     ['ls-files', '-z', '--others', '--exclude-standard', '--', path],
-    '读取 Git 状态失败',
+    'Failed to read Git status',
   )
   return result.stdout === `${path}\0`
 }
@@ -110,7 +110,7 @@ export async function isUntracked(spawn: Spawn, root: string, path: string): Pro
  * @returns the branch, its distance from upstream, and the three groups.
  */
 export async function readStatus(spawn: Spawn, root: string): Promise<RepoStatus> {
-  const failure = '读取 Git 状态失败'
+  const failure = 'Failed to read Git status'
   const [status, staged, unstaged] = await Promise.all([
     mustGit(spawn, root, ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all'], failure),
     mustGit(spawn, root, ['diff', '--cached', ...NO_DRIVERS, '--numstat', '-z', '-M'], failure),
@@ -138,7 +138,7 @@ export async function readBranches(spawn: Spawn, root: string): Promise<BranchLi
     spawn,
     root,
     ['for-each-ref', `--format=${format}`, 'refs/heads', 'refs/remotes'],
-    '读取分支失败',
+    'Failed to read branches',
   )
   const rows = result.stdout
     .split('\n')
@@ -181,6 +181,6 @@ export async function readDiff(
   // A missing file also exits with 1 under --no-index; only that case writes to stderr.
   const differs = target.side === 'untracked' && result.exitCode === DIFFERS && result.stderr.trim() === ''
   const ok = result.exitCode === 0 || differs
-  if (!ok) throw failureOf(result, '读取差异失败')
+  if (!ok) throw failureOf(result, 'Failed to read diff')
   return result.truncated ? { patch: '', truncated: true } : { patch: result.stdout, truncated: false }
 }

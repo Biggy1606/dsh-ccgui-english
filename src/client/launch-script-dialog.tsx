@@ -15,16 +15,17 @@ import { LaunchScriptForm, useScriptForm } from './launch-script-form.tsx'
 import { LaunchScriptList } from './launch-script-list.tsx'
 import { LS } from './launch-script-styles.ts'
 
-const TITLE = '启动脚本'
-const ADD_TITLE = '添加启动脚本'
-const EDIT_TITLE = '编辑启动脚本'
-const DESCRIPTION = '保存在当前工作目录下，所有会话共用。每个脚本在独立的终端标签里运行，再次运行会先结束上一次。'
-const CLOSE = '关闭'
-const ADD = '添加脚本'
-const DONE = '完成'
-const CANCEL = '取消'
-const BACK = '返回'
-const SAVE = '保存'
+const TITLE = 'Startup Scripts'
+const ADD_TITLE = 'Add Startup Script'
+const EDIT_TITLE = 'Edit Startup Script'
+const DESCRIPTION =
+  'Saved in the current working directory and shared across sessions. Each script runs in its own terminal tab; running it again stops the previous run.'
+const CLOSE = 'Close'
+const ADD = 'Add Script'
+const DONE = 'Done'
+const CANCEL = 'Cancel'
+const BACK = 'Back'
+const SAVE = 'Save'
 
 /** Which page the manager shows. */
 export type DialogPage = { readonly kind: 'list' } | { readonly kind: 'form'; readonly draft: LaunchScriptDraft }

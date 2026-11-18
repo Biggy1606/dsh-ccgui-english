@@ -38,13 +38,13 @@ describe('createGitApi', () => {
     )
     await expect(refused.push()).rejects.toThrow('推送失败：rejected')
     const html = createGitApi(() => Promise.resolve(new Response('<html>', { status: 502 })), '/w')
-    await expect(html.status()).rejects.toThrow('请求失败（502）')
+    await expect(html.status()).rejects.toThrow('Request failed (502)')
   })
 
   it('reports a network failure in words, keeping the cause', async () => {
     const cause = new TypeError('Failed to fetch')
     const api = createGitApi(() => Promise.reject(cause), '/w')
     const error: unknown = await api.status().catch((caught: unknown) => caught)
-    expect(error).toMatchObject({ message: '无法连接到 DSH 服务', cause })
+    expect(error).toMatchObject({ message: 'Unable to connect to the DSH service', cause })
   })
 })

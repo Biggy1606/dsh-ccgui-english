@@ -20,11 +20,11 @@ import { SETTINGS_ABOUT_STYLES, SettingsAbout } from './settings-about.tsx'
 import { SETTINGS_TABS_STYLES, SettingsTabs } from './settings-tabs.tsx'
 import type { SettingsTab } from './settings-tabs.tsx'
 
-export const SETTINGS_TITLE = 'CC GUI 设置'
-const CLI_TAB_LABEL = 'CLI 列表'
-const FEATURES_TAB_LABEL = '界面交互'
-const MORE_TAB_LABEL = '更多功能'
-const NOTES_TAB_LABEL = '版本记录'
+export const SETTINGS_TITLE = 'CC GUI Settings'
+const CLI_TAB_LABEL = 'CLI List'
+const FEATURES_TAB_LABEL = 'Interface'
+const MORE_TAB_LABEL = 'More Features'
+const NOTES_TAB_LABEL = 'Release Notes'
 const PAGE_CLASS = 'dsh-ccgui-settings'
 
 // Type sizes and colors follow the harness's own settings sections (e.g. ModelsSection): a

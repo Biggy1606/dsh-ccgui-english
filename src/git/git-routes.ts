@@ -43,7 +43,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk))
     size += buffer.length
-    if (size > MAX_BODY_BYTES) throw new BodyTooLarge('请求内容过大')
+    if (size > MAX_BODY_BYTES) throw new BodyTooLarge('Request body is too large')
     chunks.push(buffer)
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
@@ -68,17 +68,17 @@ export function gitHandler(
   return async (req, res) => {
     const rejection = connection.requestRejection(req)
     if (rejection !== undefined) {
-      sendJson(res, rejection, { success: false, error: '未授权' })
+      sendJson(res, rejection, { success: false, error: 'Unauthorized' })
       return
     }
     if (req.method !== 'POST') {
-      sendJson(res, 405, { success: false, error: '只支持 POST' }, { allow: 'POST' })
+      sendJson(res, 405, { success: false, error: 'Only POST is supported' }, { allow: 'POST' })
       return
     }
     const name = (req.url ?? '').split('?')[0]?.split('/').pop() ?? ''
     const operation = operationOf(name)
     if (operation === undefined) {
-      sendJson(res, 404, { success: false, error: '接口不存在' })
+      sendJson(res, 404, { success: false, error: 'Endpoint not found' })
       return
     }
     try {
@@ -87,7 +87,10 @@ export function gitHandler(
     } catch (error: unknown) {
       const status = error instanceof BodyTooLarge ? 413 : error instanceof SyntaxError ? 400 : statusFor(error)
       if (status === 500) warn(`ccgui: git ${operation} failed: ${messageOf(error)}`)
-      sendJson(res, status, { success: false, error: status === 500 ? 'Git 操作失败，请查看日志' : messageOf(error) })
+      sendJson(res, status, {
+        success: false,
+        error: status === 500 ? 'Git operation failed; check the logs' : messageOf(error),
+      })
     }
   }
 }

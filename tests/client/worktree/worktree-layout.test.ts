@@ -78,13 +78,13 @@ describe('sessionRows', () => {
     }
     expect(sessionRows(entry, byId, new Set(['s4']))).toEqual([
       { id: 's1', title: '修复登录', updatedAt: Date.parse('2026-11-09T10:00:00Z'), running: true, current: false },
-      { id: 's3', title: '新会话', updatedAt: 1_000, running: false, current: true },
+      { id: 's3', title: 'New session', updatedAt: 1_000, running: false, current: true },
     ])
   })
 
   it('keeps the blank session that is open, which is where a new session starts', () => {
     const rows = sessionRows(entry, { s2: { blank: true, retainedBy: { mainView: 1 } } }, new Set())
-    expect(rows).toEqual([{ id: 's2', title: '新会话', updatedAt: undefined, running: false, current: true }])
+    expect(rows).toEqual([{ id: 's2', title: 'New session', updatedAt: undefined, running: false, current: true }])
   })
 })
 
@@ -99,10 +99,10 @@ describe('relativeTime', () => {
   const now = Date.parse('2026-11-09T12:00:00Z')
 
   it('says how long ago, in the coarsest whole unit', () => {
-    expect(relativeTime(now - 20_000, now)).toBe('刚刚')
-    expect(relativeTime(now - 33 * 60_000, now)).toBe('33分钟')
-    expect(relativeTime(now - 5 * 3_600_000, now)).toBe('5小时')
-    expect(relativeTime(now - 3 * 86_400_000, now)).toBe('3天')
+    expect(relativeTime(now - 20_000, now)).toBe('Just now')
+    expect(relativeTime(now - 33 * 60_000, now)).toBe('33 min ago')
+    expect(relativeTime(now - 5 * 3_600_000, now)).toBe('5 hr ago')
+    expect(relativeTime(now - 3 * 86_400_000, now)).toBe('3 days ago')
   })
 
   it('says nothing without a time', () => {

@@ -35,7 +35,7 @@ function setup(
   return { api, onCreated, onClose, user: userEvent.setup() }
 }
 
-const createButton = () => screen.getByRole('button', { name: /创建 Worktree|正在创建/ })
+const createButton = () => screen.getByRole('button', { name: /Create Worktree|Creating/ })
 const field = (label: string) => screen.getByLabelText(label)
 
 afterEach(cleanup)
@@ -43,15 +43,15 @@ afterEach(cleanup)
 describe('WorktreeDialog: reading the repository', () => {
   it('says it is reading, then shows the form for the repository', async () => {
     setup()
-    expect(screen.getByRole('status').textContent).toBe('正在读取仓库信息…')
-    expect(await screen.findByText('基于仓库 app')).toBeTruthy()
-    expect((field('基于（base）') as HTMLInputElement).value).toBe('main')
+    expect(screen.getByRole('status').textContent).toBe('Loading repository information…')
+    expect(await screen.findByText('Based on repository app')).toBeTruthy()
+    expect((field('Base branch') as HTMLInputElement).value).toBe('main')
   })
 
   it('explains a workspace outside any repository, with only a cancel button', async () => {
     const { onClose } = setup({ info: () => Promise.resolve({ repo: false }) })
-    expect((await screen.findByRole('alert')).textContent).toContain('不在 Git 仓库里')
-    await userEvent.click(screen.getByRole('button', { name: '取消' }))
+    expect((await screen.findByRole('alert')).textContent).toContain('not in a Git repository')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(onClose).toHaveBeenCalled()
   })
 
@@ -64,11 +64,11 @@ describe('WorktreeDialog: reading the repository', () => {
 describe('WorktreeDialog: new branch', () => {
   it('creates from the form, then hands over the worktree and closes', async () => {
     const { api, onCreated, onClose, user } = setup()
-    await screen.findByText('基于仓库 app')
+    await screen.findByText('Based on repository app')
     expect(createButton()).toHaveProperty('disabled', true)
-    expect(createButton().getAttribute('title')).toBe('请填写分支名')
-    await user.type(field('分支名'), 'feature/parallel-review')
-    expect(field('位置').getAttribute('placeholder')).toBe('/code/app-worktrees/feature-parallel-review')
+    expect(createButton().getAttribute('title')).toBe('Enter a branch name')
+    await user.type(field('Branch name'), 'feature/parallel-review')
+    expect(field('Location').getAttribute('placeholder')).toBe('/code/app-worktrees/feature-parallel-review')
     await user.click(createButton())
     expect(api.create).toHaveBeenCalledWith({
       mode: 'new',
@@ -87,16 +87,16 @@ describe('WorktreeDialog: new branch', () => {
 
   it('creates on Enter in a field, and passes the session switch through', async () => {
     const { onCreated, user } = setup()
-    await screen.findByText('基于仓库 app')
+    await screen.findByText('Based on repository app')
     await user.click(screen.getByRole('switch'))
-    await user.type(field('分支名'), 'b{Enter}')
+    await user.type(field('Branch name'), 'b{Enter}')
     expect(onCreated).toHaveBeenCalledWith(expect.objectContaining({ branch: 'b', openSession: false }))
   })
 
   it('ignores Enter while the form is incomplete', async () => {
     const { api, user } = setup()
-    await screen.findByText('基于仓库 app')
-    await user.type(field('分支名'), '{Enter}')
+    await screen.findByText('Based on repository app')
+    await user.type(field('Branch name'), '{Enter}')
     expect(api.create).not.toHaveBeenCalled()
   })
 
@@ -109,11 +109,11 @@ describe('WorktreeDialog: new branch', () => {
         }),
     )
     const { onClose, user } = setup({ create })
-    await screen.findByText('基于仓库 app')
-    await user.type(field('分支名'), 'b')
+    await screen.findByText('Based on repository app')
+    await user.type(field('Branch name'), 'b')
     await user.click(createButton())
-    expect(createButton().textContent).toBe('正在创建…')
-    expect(field('分支名')).toHaveProperty('disabled', true)
+    expect(createButton().textContent).toBe('Creating…')
+    expect(field('Branch name')).toHaveProperty('disabled', true)
     finish(new Error('创建 worktree 失败：already exists'))
     expect((await screen.findByRole('alert')).textContent).toBe('创建 worktree 失败：already exists')
     expect(createButton()).toHaveProperty('disabled', false)
@@ -122,23 +122,23 @@ describe('WorktreeDialog: new branch', () => {
 
   it('reports a workspace that stopped being a repository', async () => {
     const { user } = setup({ create: () => Promise.resolve({ repo: false }) })
-    await screen.findByText('基于仓库 app')
-    await user.type(field('分支名'), 'b{Enter}')
-    expect((await screen.findByRole('alert')).textContent).toContain('不在 Git 仓库里')
+    await screen.findByText('Based on repository app')
+    await user.type(field('Branch name'), 'b{Enter}')
+    expect((await screen.findByRole('alert')).textContent).toContain('not in a Git repository')
   })
 
   it('shows the failure to add the workspace', async () => {
     const { user } = setup({ onCreated: () => Promise.reject(new Error('没能加入侧边栏')) })
-    await screen.findByText('基于仓库 app')
-    await user.type(field('分支名'), 'b{Enter}')
+    await screen.findByText('Based on repository app')
+    await user.type(field('Branch name'), 'b{Enter}')
     expect((await screen.findByRole('alert')).textContent).toBe('没能加入侧边栏')
   })
 
   it('uses a typed location instead of the default', async () => {
     const { api, user } = setup()
-    await screen.findByText('基于仓库 app')
-    await user.type(field('分支名'), 'b')
-    await user.type(field('位置'), '/elsewhere/b{Enter}')
+    await screen.findByText('Based on repository app')
+    await user.type(field('Branch name'), 'b')
+    await user.type(field('Location'), '/elsewhere/b{Enter}')
     expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ path: '/elsewhere/b' }))
   })
 })
@@ -149,13 +149,13 @@ describe('WorktreeDialog: other sources', () => {
     const { api, onCreated, user } = setup({
       create: (request) => Promise.resolve({ path: request.path, branch: 'release/2.0' }),
     })
-    await screen.findByText('基于仓库 app')
-    await user.click(screen.getByRole('tab', { name: '已有分支' }))
-    expect(screen.getByRole('tab', { name: '已有分支' }).getAttribute('aria-selected')).toBe('true')
-    await user.click(field('分支'))
-    await user.type(field('分支'), 'rel')
+    await screen.findByText('Based on repository app')
+    await user.click(screen.getByRole('tab', { name: 'Existing branch' }))
+    expect(screen.getByRole('tab', { name: 'Existing branch' }).getAttribute('aria-selected')).toBe('true')
+    await user.click(field('Branch'))
+    await user.type(field('Branch'), 'rel')
     fireEvent.mouseDown(screen.getByRole('option', { name: 'origin/release/2.0' }))
-    expect(field('位置').getAttribute('placeholder')).toBe('/code/app-worktrees/release-2.0')
+    expect(field('Location').getAttribute('placeholder')).toBe('/code/app-worktrees/release-2.0')
     await user.click(createButton())
     expect(api.create).toHaveBeenCalledWith({
       mode: 'existing',
@@ -167,10 +167,10 @@ describe('WorktreeDialog: other sources', () => {
 
   it('names the branch after the pull request', async () => {
     const { api, user } = setup()
-    await screen.findByText('基于仓库 app')
-    await user.click(screen.getByRole('tab', { name: '从 PR 创建' }))
+    await screen.findByText('Based on repository app')
+    await user.click(screen.getByRole('tab', { name: 'From PR' }))
     await user.type(field('PR'), 'https://github.com/acme/app/pull/2066')
-    expect((field('分支名') as HTMLInputElement).value).toBe('pr-2066')
+    expect((field('Branch name') as HTMLInputElement).value).toBe('pr-2066')
     await user.click(createButton())
     expect(api.create).toHaveBeenCalledWith({
       mode: 'pr',
@@ -182,11 +182,11 @@ describe('WorktreeDialog: other sources', () => {
 
   it('keeps a branch name the user typed for the pull request', async () => {
     const { user } = setup()
-    await screen.findByText('基于仓库 app')
-    await user.click(screen.getByRole('tab', { name: '从 PR 创建' }))
-    await user.type(field('分支名'), 'review')
+    await screen.findByText('Based on repository app')
+    await user.click(screen.getByRole('tab', { name: 'From PR' }))
+    await user.type(field('Branch name'), 'review')
     await user.type(field('PR'), '#5')
-    expect((field('分支名') as HTMLInputElement).value).toBe('review')
+    expect((field('Branch name') as HTMLInputElement).value).toBe('review')
   })
 })
 
@@ -206,8 +206,8 @@ describe('BranchPicker', () => {
 
   it('picks with the arrow keys and Enter, and closes on Escape without closing the dialog', async () => {
     const { onClose, user } = setup()
-    await screen.findByText('基于仓库 app')
-    const base = field('基于（base）')
+    await screen.findByText('Based on repository app')
+    const base = field('Base branch')
     await user.click(base)
     expect(base.getAttribute('aria-expanded')).toBe('true')
     await user.keyboard('{ArrowDown}{ArrowDown}{Enter}')
@@ -224,10 +224,10 @@ describe('BranchPicker', () => {
 
   it('closes when the field loses focus, and opens when typing', async () => {
     const { user } = setup()
-    await screen.findByText('基于仓库 app')
-    const base = field('基于（base）')
+    await screen.findByText('Based on repository app')
+    const base = field('Base branch')
     await user.click(base)
-    await user.click(field('分支名'))
+    await user.click(field('Branch name'))
     expect(base.getAttribute('aria-expanded')).toBe('false')
     await user.type(base, 'x')
     expect(base.getAttribute('aria-expanded')).toBe('false')

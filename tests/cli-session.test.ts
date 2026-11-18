@@ -112,7 +112,7 @@ describe('CliSession text turns', () => {
       kind: 'error',
       failure: {
         code: 'CLI_REFUSAL',
-        message: 'OpenCode 拒绝继续这个请求：Hy4 限时免费模型的额度已用尽，请切换模型。',
+        message: 'OpenCode refused to continue this request: Hy4 限时免费模型的额度已用尽，请切换模型。',
       },
     })
   })
@@ -126,7 +126,9 @@ describe('CliSession text turns', () => {
     })
     const chunks = await collect(session.stream({ messages: [user('1', 'hi')] }))
     const reason = finishOf(chunks)?.reason
-    expect(reason).toMatchObject({ failure: { message: expect.stringContaining('未说明原因') as unknown } })
+    expect(reason).toMatchObject({
+      failure: { message: expect.stringContaining('without giving a reason') as unknown },
+    })
     expect(JSON.stringify(reason)).not.toContain('let me start by')
   })
 })
@@ -430,7 +432,7 @@ describe('CliSession cancellation', () => {
     controller.abort(new Error('stop'))
     await expect(pending).rejects.toThrow('stop')
     await expect(collect(session.stream({ messages: [user('1', 'go'), user('2', 'next')] }))).rejects.toThrow(
-      '重新发送',
+      'please resend',
     )
     expect(fake.prompts).toHaveLength(1)
     expect(session.sentMessageIds.has('2')).toBe(false)

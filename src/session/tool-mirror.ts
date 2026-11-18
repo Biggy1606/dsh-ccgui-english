@@ -10,7 +10,7 @@ import { commandOf, isFinished, isReadyToPublish, mergeToolUpdate } from '../too
 import type { ToolRecord } from '../tool-record.ts'
 import { mirroredCallId } from './ptc-call.ts'
 
-const INTERRUPTED_OUTPUT = 'CLI 在这个工具完成之前结束了本轮。'
+const INTERRUPTED_OUTPUT = 'The CLI ended this turn before the tool completed.'
 
 /** Construction inputs for a tool mirror. */
 export interface ToolMirrorOptions {

@@ -45,8 +45,8 @@ export interface GroupProps {
 }
 
 const GROUP_LABEL = 'Worktrees'
-const NEW_WORKTREE = '新建 Worktree'
-const NO_SESSIONS = '暂无会话'
+const NEW_WORKTREE = 'New Worktree'
+const NO_SESSIONS = 'No sessions yet'
 
 function pointOf(event: MouseEvent): Point {
   event.preventDefault()
@@ -93,7 +93,7 @@ function WorktreeRow(props: { readonly entry: WorktreeEntry; readonly open: bool
   const toggle = (): void => {
     actions.setOpen('worktrees', entry.workspaceId, !open)
   }
-  const newSession = `在“${entry.branch}”中新建会话`
+  const newSession = `New session in “${entry.branch}”`
   return (
     <div
       role="treeitem"

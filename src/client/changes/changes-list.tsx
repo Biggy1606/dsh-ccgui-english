@@ -32,10 +32,10 @@ export function SummaryRow({
   const { files, additions, deletions } = summarize(status)
   return (
     <div className={CLS.summary}>
-      <span className={CLS.summaryTitle}>{files} 个未提交变更</span>
+      <span className={CLS.summaryTitle}>{files} uncommitted changes</span>
       {additions > 0 ? <span className={CLS.add}>+{additions}</span> : null}
       {deletions > 0 ? <span className={CLS.del}>−{deletions}</span> : null}
-      <span className={CLS.summarySelected}>已选 {selected} 项</span>
+      <span className={CLS.summarySelected}>{selected} selected</span>
     </div>
   )
 }
@@ -60,7 +60,7 @@ function GroupCheckbox({
       type="checkbox"
       className={CLS.checkbox}
       checked={check === 'all'}
-      aria-label="全选本组"
+      aria-label="Select all in group"
       onChange={(event) => {
         onChange(event.target.checked)
       }}
@@ -106,7 +106,7 @@ function GroupActions({
   if (group === 'staged')
     return (
       <TextAction
-        label="全部取消暂存"
+        label="Unstage all"
         busy={busy}
         onClick={() => {
           actions.unstage(paths)
@@ -116,7 +116,7 @@ function GroupActions({
   return (
     <>
       <TextAction
-        label="全部撤销"
+        label="Discard all"
         danger
         busy={busy}
         onClick={() => {
@@ -124,7 +124,7 @@ function GroupActions({
         }}
       />
       <TextAction
-        label="全部暂存"
+        label="Stage all"
         busy={busy}
         onClick={() => {
           actions.stage(paths)
@@ -164,7 +164,7 @@ function GroupHeader({
         type="button"
         className={CLS.iconButton}
         aria-expanded={open}
-        aria-label={`${open ? '折叠' : '展开'}${title}`}
+        aria-label={`${open ? 'Collapse ' : 'Expand '}${title}`}
         onClick={onToggle}
       >
         <ChevronIcon size={14} className={open ? undefined : CLS.collapsed} />
@@ -219,7 +219,7 @@ function Group(props: GroupProps): ReactElement {
 /** The groups, or the empty state when nothing changed. */
 export function ChangesList({ status, selection, busy, actions }: ListProps): ReactElement {
   const groups = GROUP_IDS.filter((group) => status[group].length > 0)
-  if (groups.length === 0) return <div className={CLS.empty}>没有变更</div>
+  if (groups.length === 0) return <div className={CLS.empty}>No changes</div>
   return (
     <div className={CLS.list}>
       {groups.map((group) => (

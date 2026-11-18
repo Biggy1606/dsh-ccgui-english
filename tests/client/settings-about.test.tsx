@@ -27,9 +27,9 @@ function packageRepositoryPage(): string {
 describe('SettingsAbout', () => {
   it('shows the version, outside the build as a development build', () => {
     // Only the client build defines the version; tests run the source directly.
-    expect(PLUGIN_VERSION).toBe('开发版')
+    expect(PLUGIN_VERSION).toBe('Development')
     const { container } = render(<SettingsAbout />)
-    expect(screen.getByText('开发版').parentElement?.textContent).toBe('版本开发版')
+    expect(screen.getByText('Development').parentElement?.textContent).toBe('VersionDevelopment')
     expect(container.querySelectorAll('.dsh-ccgui-about-pill')).toHaveLength(3)
     expect(SETTINGS_ABOUT_STYLES).toContain('.dsh-ccgui-about')
   })
@@ -46,29 +46,29 @@ describe('SettingsAbout', () => {
 
   it('opens the WeChat group QR code and closes it with a second press or Escape', async () => {
     render(<SettingsAbout />)
-    const toggle = screen.getByRole('button', { name: '微信交流群' })
+    const toggle = screen.getByRole('button', { name: 'WeChat community group' })
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('img', { name: '官方微信交流群二维码' })).toBeNull()
+    expect(screen.queryByRole('img', { name: 'Official WeChat community group QR code' })).toBeNull()
     await userEvent.click(toggle)
     expect(toggle.getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByRole('img', { name: '官方微信交流群二维码' })).toBeDefined()
-    expect(screen.getByText('使用微信扫一扫')).toBeDefined()
+    expect(screen.getByRole('img', { name: 'Official WeChat community group QR code' })).toBeDefined()
+    expect(screen.getByText('Scan with WeChat')).toBeDefined()
     await userEvent.click(toggle)
-    expect(screen.queryByRole('img', { name: '官方微信交流群二维码' })).toBeNull()
+    expect(screen.queryByRole('img', { name: 'Official WeChat community group QR code' })).toBeNull()
     await userEvent.click(toggle)
     await userEvent.keyboard('{Escape}')
-    expect(screen.queryByRole('img', { name: '官方微信交流群二维码' })).toBeNull()
+    expect(screen.queryByRole('img', { name: 'Official WeChat community group QR code' })).toBeNull()
   })
 
   it('turns the version pill into a link to a newer release', async () => {
     const url = 'https://github.com/zhukunpenglinyutong/dsh-ccgui/releases/tag/v1.0.2'
     const { container } = render(<SettingsAbout checkUpdate={() => Promise.resolve({ version: '1.0.2', url })} />)
-    const link = await screen.findByRole('link', { name: '有新版本 v1.0.2，查看更新说明' })
+    const link = await screen.findByRole('link', { name: 'Version v1.0.2 is available; view release notes' })
     expect(link.getAttribute('href')).toBe(url)
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noreferrer')
     expect(link.getAttribute('title')).toBeNull()
-    expect(link.textContent).toBe('版本开发版↑ v1.0.2')
+    expect(link.textContent).toBe('VersionDevelopment↑ v1.0.2')
     expect(container.querySelectorAll('.dsh-ccgui-about-pill')).toHaveLength(3)
   })
 
@@ -78,8 +78,8 @@ describe('SettingsAbout', () => {
     await waitFor(() => {
       expect(checkUpdate).toHaveBeenCalled()
     })
-    expect(screen.queryByRole('link', { name: /有新版本/ })).toBeNull()
-    expect(screen.getByText('开发版').parentElement?.tagName).toBe('SPAN')
+    expect(screen.queryByRole('link', { name: /Version v/ })).toBeNull()
+    expect(screen.getByText('Development').parentElement?.tagName).toBe('SPAN')
   })
 
   it('ignores an answer that arrives after the page closed', async () => {

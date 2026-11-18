@@ -150,9 +150,9 @@ describe('openStdioTransport', () => {
     const { transport, closed, cwd } = open()
     await transport.initialize()
     const { sessionId } = await transport.newSession(cwd)
-    await expect(transport.prompt(sessionId, text('CRASH'))).rejects.toThrow('退出码 3')
+    await expect(transport.prompt(sessionId, text('CRASH'))).rejects.toThrow('code 3')
     expect(closed).toHaveLength(1)
-    expect(closed[0]?.message).toContain('退出码 3')
+    expect(closed[0]?.message).toContain('code 3')
     await transport.dispose()
   })
 
@@ -167,9 +167,9 @@ describe('openStdioTransport', () => {
     const { transport, closed, cwd } = open([process.execPath, FAKE_AGENT], slowDone)
     await transport.initialize()
     const { sessionId } = await transport.newSession(cwd)
-    await expect(transport.prompt(sessionId, text('CRASH'))).rejects.toThrow('连接已关闭')
+    await expect(transport.prompt(sessionId, text('CRASH'))).rejects.toThrow('Connection closed')
     expect(closed).toHaveLength(1)
-    await expect(transport.prompt(sessionId, text('again'))).rejects.toThrow('连接已关闭')
+    await expect(transport.prompt(sessionId, text('again'))).rejects.toThrow('Connection closed')
     await transport.dispose()
   })
 
@@ -325,14 +325,14 @@ describe('openStdioTransport over a scripted subprocess', () => {
     const { transport, closed, fake } = openFake({ respond: () => undefined })
     const pending = transport.newSession('/a')
     fake.exitWith({ exitCode: null, signal: 'SIGTERM' })
-    await expect(pending).rejects.toThrow('进程被信号 SIGTERM 终止')
-    expect(closed.map((error) => error.message)).toEqual(['进程被信号 SIGTERM 终止'])
+    await expect(pending).rejects.toThrow('Process terminated by signal SIGTERM')
+    expect(closed.map((error) => error.message)).toEqual(['Process terminated by signal SIGTERM'])
   })
 
   it('reports an exit code when the process exits normally', async () => {
     const { closed, fake } = openFake()
     fake.exitWith({ exitCode: 7, signal: null })
-    await expect.poll(() => closed.map((error) => error.message)).toEqual(['进程退出，退出码 7'])
+    await expect.poll(() => closed.map((error) => error.message)).toEqual(['Process exited with code 7'])
   })
 
   // From a Windows report: npx found a half-installed cache entry and died before the
@@ -348,7 +348,7 @@ describe('openStdioTransport over a scripted subprocess', () => {
       ].join('\n'),
     )
     fake.exitWith({ exitCode: 4_294_963_238, signal: null })
-    await expect(started).rejects.toThrow('退出码 4294963238（即 -4058）')
+    await expect(started).rejects.toThrow('code 4294963238 (signed: -4058)')
     const [reason] = closed
     expect(reason?.message).toContain('npm error code ENOENT')
     expect(reason?.message).toContain('_npx\\928bb229ebc08fcf')
@@ -357,7 +357,7 @@ describe('openStdioTransport over a scripted subprocess', () => {
   it('keeps only the end of a long stderr and says nothing when it is empty', async () => {
     const quiet = openFake()
     quiet.fake.exitWith({ exitCode: 7, signal: null })
-    await expect.poll(() => quiet.closed.map((error) => error.message)).toEqual(['进程退出，退出码 7'])
+    await expect.poll(() => quiet.closed.map((error) => error.message)).toEqual(['Process exited with code 7'])
     const noisy = openFake()
     noisy.fake.writeStderr(`${'x'.repeat(2000)}\nlast line`)
     noisy.fake.exitWith({ exitCode: 1, signal: null })

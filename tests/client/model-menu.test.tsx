@@ -73,7 +73,7 @@ function setup(state = directoryState(), result: () => Promise<SelectResult> = (
   return { directory, session, load, select, user: userEvent.setup() }
 }
 
-const trigger = () => screen.getByRole('button', { name: /^(选择模型|请选择模型)/ })
+const trigger = () => screen.getByRole('button', { name: /^(Select model|Select a model)/ })
 const rows = () => screen.queryAllByRole('menuitemradio')
 const rowNames = () => rows().map((row) => row.getAttribute('title'))
 const activeRow = () =>
@@ -131,14 +131,14 @@ describe('CliModelMenu rendering', () => {
   it('names the current model on the trigger', () => {
     setup()
     expect(trigger().getAttribute('title')).toBe('Fake Small（默认）')
-    expect(trigger().getAttribute('aria-label')).toBe('选择模型，当前 Fake Small（默认）')
+    expect(trigger().getAttribute('aria-label')).toBe('Select model, current: Fake Small（默认）')
     expect(trigger().getAttribute('aria-haspopup')).toBe('menu')
   })
 
   it('asks for a model when the current one is not in the list', () => {
     setup(directoryState(FEW_MODELS, 'gone'))
-    expect(trigger().getAttribute('aria-label')).toBe('请选择模型')
-    expect(trigger().textContent).toContain('请选择模型')
+    expect(trigger().getAttribute('aria-label')).toBe('Select a model')
+    expect(trigger().textContent).toContain('Select a model')
   })
 
   it('shows the pending state on the trigger while a selection settles', () => {
@@ -333,7 +333,7 @@ describe('CliModelMenu search', () => {
   it('focuses the search for a long list and filters the rows as you type', async () => {
     const { user } = setup(directoryState(MANY_MODELS))
     await user.click(trigger())
-    const search = screen.getByRole('searchbox', { name: '搜索模型…' })
+    const search = screen.getByRole('searchbox', { name: 'Search models…' })
     expect(document.activeElement).toBe(search)
     await user.keyboard('large')
     expect(rowNames()).toEqual(['Fake Large'])
@@ -352,7 +352,7 @@ describe('CliModelMenu search', () => {
     await user.click(trigger())
     await user.keyboard('zzz')
     expect(rows()).toHaveLength(0)
-    expect(screen.getByRole('status').textContent).toBe('没有匹配的模型。')
+    expect(screen.getByRole('status').textContent).toBe('No matching models.')
     await user.keyboard('{Enter}')
     expect(select).not.toHaveBeenCalled()
   })
@@ -410,15 +410,27 @@ describe('CliModelMenu choosing with the mouse', () => {
       current: { provider: PROVIDER, model: 'default' },
     })
     await user.click(trigger())
-    expect(screen.getByRole('status').textContent).toBe('还没有读到 Fake CLI 的模型列表')
+    expect(screen.getByRole('status').textContent).toBe('The model list for Fake CLI has not loaded yet')
   })
 })
 
 describe('CliModelMenu failed selection', () => {
   it.each([
-    ['the error message', () => Promise.resolve({ error: { message: 'model busy' } }), '切换模型失败：model busy'],
-    ['the fallback for an error without a message', () => Promise.resolve({ error: {} }), '切换模型失败：未知错误'],
-    ['a rejected selection', () => Promise.reject(new Error('socket closed')), '切换模型失败：Error: socket closed'],
+    [
+      'the error message',
+      () => Promise.resolve({ error: { message: 'model busy' } }),
+      'Failed to change model: model busy',
+    ],
+    [
+      'the fallback for an error without a message',
+      () => Promise.resolve({ error: {} }),
+      'Failed to change model: Unknown error',
+    ],
+    [
+      'a rejected selection',
+      () => Promise.reject(new Error('socket closed')),
+      'Failed to change model: Error: socket closed',
+    ],
   ])('shows %s in a toast and keeps the menu open', async (_case, result: () => Promise<SelectResult>, text) => {
     const { user } = setup(directoryState(), result)
     await user.click(trigger())

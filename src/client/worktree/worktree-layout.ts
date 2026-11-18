@@ -53,7 +53,7 @@ export interface SessionRow {
 type SessionsById = Readonly<Record<string, SessionSummary | undefined>>
 
 /** The harness's own label for a session that has no title yet. */
-const UNTITLED = '新会话'
+const UNTITLED = 'New session'
 const MINUTE_MS = 60_000
 const HOUR_MS = 60 * MINUTE_MS
 const DAY_MS = 24 * HOUR_MS
@@ -134,8 +134,8 @@ export function sessionRows(entry: WorktreeEntry, byId: SessionsById, archived: 
 export function relativeTime(at: number | undefined, now: number): string {
   if (at === undefined || Number.isNaN(at)) return ''
   const elapsed = Math.max(0, now - at)
-  if (elapsed < MINUTE_MS) return '刚刚'
-  if (elapsed < HOUR_MS) return `${String(Math.floor(elapsed / MINUTE_MS))}分钟`
-  if (elapsed < DAY_MS) return `${String(Math.floor(elapsed / HOUR_MS))}小时`
-  return `${String(Math.floor(elapsed / DAY_MS))}天`
+  if (elapsed < MINUTE_MS) return 'Just now'
+  if (elapsed < HOUR_MS) return `${String(Math.floor(elapsed / MINUTE_MS))} min ago`
+  if (elapsed < DAY_MS) return `${String(Math.floor(elapsed / HOUR_MS))} hr ago`
+  return `${String(Math.floor(elapsed / DAY_MS))} days ago`
 }

@@ -142,16 +142,16 @@ describe('worktree-add: new branch', () => {
   it('refuses a branch that already exists', async () => {
     git(repo, 'branch', 'taken')
     await expect(add({ mode: 'new', branch: 'taken', base: 'main', path: join(scratch, 'x') })).rejects.toThrow(
-      '分支已存在：taken',
+      'Branch already exists: taken',
     )
   })
 
   it('refuses invalid branch names and bases', async () => {
     const path = join(scratch, 'x')
-    await expect(add({ mode: 'new', branch: 'bad..name', base: 'main', path })).rejects.toThrow('分支名称无效')
-    await expect(add({ mode: 'new', branch: '-x', base: 'main', path })).rejects.toThrow('分支名称无效')
-    await expect(add({ mode: 'new', branch: 'ok', base: '--orphan', path })).rejects.toThrow('基准分支无效')
-    await expect(add({ mode: 'new', branch: 'ok', base: 'nope', path })).rejects.toThrow('基准分支无效')
+    await expect(add({ mode: 'new', branch: 'bad..name', base: 'main', path })).rejects.toThrow('Invalid branch name')
+    await expect(add({ mode: 'new', branch: '-x', base: 'main', path })).rejects.toThrow('Invalid branch name')
+    await expect(add({ mode: 'new', branch: 'ok', base: '--orphan', path })).rejects.toThrow('Invalid base branch')
+    await expect(add({ mode: 'new', branch: 'ok', base: 'nope', path })).rejects.toThrow('Invalid base branch')
     expect(existsSync(path)).toBe(false)
   })
 
@@ -189,7 +189,7 @@ describe('worktree-add: existing branch', () => {
 
   it('refuses a branch that does not exist', async () => {
     await expect(add({ mode: 'existing', branch: 'ghost', path: join(scratch, 'g') })).rejects.toThrow(
-      '找不到分支：ghost',
+      'Branch not found: ghost',
     )
   })
 })
@@ -234,7 +234,7 @@ describe('worktree-add: pull request', () => {
 
   it('reports a pull request the remote does not have', async () => {
     await expect(add({ mode: 'pr', pr: '99', branch: 'pr-99', path: join(scratch, 'p') })).rejects.toThrow(
-      '拉取 PR #99 失败',
+      'Failed to fetch PR #99',
     )
   })
 
@@ -247,7 +247,7 @@ describe('worktree-add: pull request', () => {
   it('refuses when there is no remote at all', async () => {
     git(repo, 'remote', 'remove', 'origin')
     await expect(add({ mode: 'pr', pr: '7', branch: 'pr-7', path: join(scratch, 'p') })).rejects.toThrow(
-      '没有可以拉取 PR 的远程仓库',
+      'No remote repository is available to fetch the PR',
     )
   })
 })
@@ -255,10 +255,10 @@ describe('worktree-add: pull request', () => {
 describe('worktree-add: request checks', () => {
   it('requires an absolute target path and a known mode', async () => {
     await expect(add({ mode: 'new', branch: 'b', base: 'main', path: 'relative/dir' })).rejects.toThrow(
-      'Worktree 位置必须是绝对路径',
+      'Worktree location must be an absolute path',
     )
     await expect(add({ mode: 'other', branch: 'b', path: join(scratch, 'x') })).rejects.toThrow(
-      '缺少或无效的参数：mode',
+      'Missing or invalid parameter: mode',
     )
   })
 

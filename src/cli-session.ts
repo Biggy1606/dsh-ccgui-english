@@ -195,7 +195,7 @@ export class CliSession {
    */
   async waitForTool(callId: string, ask: AskPermission, signal?: AbortSignal): Promise<ToolOutcome> {
     const acpId = this.tools.acpIdFor(callId)
-    if (acpId === undefined) throw new Error(`ccgui: 调用 ${callId} 不是这个 CLI 会话发出的`)
+    if (acpId === undefined) throw new Error(`ccgui: Call ${callId} was not made by this CLI session`)
     this.tools.startMirror(acpId)
     try {
       const context = {
@@ -239,7 +239,7 @@ export class CliSession {
   async dispose(force = false, reason?: string): Promise<void> {
     this.disposeRequested = true
     this.failure ??= new LlmError(
-      reason === undefined ? `${this.label} 会话已关闭。` : `${this.label} 已停止：${reason}`,
+      reason === undefined ? `${this.label} session closed.` : `${this.label} stopped: ${reason}`,
       'CLI_START_FAILED',
     )
     this.settleFailure(this.failure)
@@ -253,7 +253,10 @@ export class CliSession {
     if (this.turns.cancelling) {
       await abortable(this.turns.untilEnded(), signal)
       if (this.failure !== undefined) {
-        throw new LlmError(`${this.label} 没有响应取消，已被结束。这条消息没有发送，请重新发送。`, 'CLI_PROMPT_FAILED')
+        throw new LlmError(
+          `${this.label} did not respond to cancellation and was terminated. This message was not sent; please resend.`,
+          'CLI_PROMPT_FAILED',
+        )
       }
     }
     // The CLI can exit during either wait above, and a prompt queued on a dead
@@ -299,7 +302,7 @@ export class CliSession {
       this.events.push({
         type: 'text',
         notice: true,
-        text: `（${label} 当前模型不支持思考强度 ${reasoningEffort}，沿用 CLI 的 ${kept}。请在菜单里重新选择。）\n\n`,
+        text: `(${label}’s current model does not support reasoning effort ${reasoningEffort}; the CLI’s ${kept} is retained. Please choose again in the menu.)\n\n`,
       })
     }
     // A mode picked before the CLI started has had no session to change until now.
@@ -348,7 +351,7 @@ export class CliSession {
         this.disposeRequested && this.failure !== undefined
           ? this.failure
           : new LlmError(
-              `无法启动 ${this.label}：${errorMessage(error)}。${startHint(errorMessage(error))}`,
+              `Could not start ${this.label}: ${errorMessage(error)}. ${startHint(errorMessage(error))}`,
               'CLI_START_FAILED',
               { cause: error },
             )
@@ -396,7 +399,7 @@ export class CliSession {
     this.events.push({
       type: 'text',
       notice: true,
-      text: `（${this.label} 无法恢复之前的会话，已开始新会话，它不记得之前的内容。）\n\n`,
+      text: `(${this.label} could not resume the previous session. A new session has started and does not remember the previous content.)\n\n`,
     })
   }
 
@@ -440,7 +443,7 @@ export class CliSession {
   }
 
   private handleClosed(error: Error): void {
-    this.failure ??= new LlmError(`${this.label} 已退出：${error.message}`, 'CLI_PROMPT_FAILED', { cause: error })
+    this.failure ??= new LlmError(`${this.label} exited: ${error.message}`, 'CLI_PROMPT_FAILED', { cause: error })
     this.settleFailure(this.failure)
   }
 

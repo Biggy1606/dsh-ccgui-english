@@ -31,8 +31,8 @@ interface HeaderProps {
 const NEW_BRANCH_ID = '\0new'
 const REMOTE_PREFIX = 'remote:'
 const LOCAL_PREFIX = 'local:'
-const DETACHED_LABEL = '游离 HEAD'
-const LOADING_ITEM = { id: '\0loading', label: '加载中…' }
+const DETACHED_LABEL = 'Detached HEAD'
+const LOADING_ITEM = { id: '\0loading', label: 'Loading…' }
 
 function HeaderButton({
   label,
@@ -68,11 +68,11 @@ function branchItems(list: BranchList | undefined): readonly { id: string; label
       label: (
         <span className={CLS.remoteItem}>
           {name}
-          <span className={CLS.remoteTag}>远程分支</span>
+          <span className={CLS.remoteTag}>Remote branch</span>
         </span>
       ),
     })),
-    { id: NEW_BRANCH_ID, label: '新建分支…' },
+    { id: NEW_BRANCH_ID, label: 'New branch…' },
   ]
 }
 
@@ -97,8 +97,8 @@ function NewBranchForm({
         className={CLS.branchInput}
         // The form only appears after a click on 新建分支, so typing can start at once.
         autoFocus
-        placeholder="分支名称"
-        aria-label="分支名称"
+        placeholder="Branch name"
+        aria-label="Branch name"
         value={name}
         onChange={(event) => {
           setName(event.target.value)
@@ -108,10 +108,10 @@ function NewBranchForm({
         }}
       />
       <button type="submit" className={CLS.groupAction} disabled={trimmed === ''}>
-        新建
+        Create
       </button>
       <button type="button" className={CLS.groupAction} onClick={onCancel}>
-        返回
+        Back
       </button>
     </form>
   )
@@ -152,7 +152,7 @@ function BranchButton({
   readonly onClick: () => void
 }): ReactElement {
   return (
-    <button type="button" className={CLS.branchButton} aria-label="分支" disabled={busy} onClick={onClick}>
+    <button type="button" className={CLS.branchButton} aria-label="Branch" disabled={busy} onClick={onClick}>
       <BranchIcon size={16} />
       <span className={CLS.branchName}>{branch ?? DETACHED_LABEL}</span>
       <ChevronIcon size={16} />
@@ -215,20 +215,20 @@ export function ChangesHeader({ status, api, busy, refreshing, actions }: Header
   return (
     <div className={CLS.header}>
       <div className={CLS.headerRow}>
-        <span className={CLS.title}>变更</span>
+        <span className={CLS.title}>Changes</span>
         {tracked ? (
-          <span className={CLS.distance} title="领先 / 落后上游的提交数">
+          <span className={CLS.distance} title="Commits ahead of / behind upstream">
             ↑{status.ahead} ↓{status.behind}
           </span>
         ) : null}
         <span className={CLS.headerButtons}>
-          <HeaderButton label="刷新" disabled={refreshing} onClick={actions.refresh}>
+          <HeaderButton label="Refresh" disabled={refreshing} onClick={actions.refresh}>
             <RefreshIcon size={16} className={refreshing ? CLS.spinning : undefined} />
           </HeaderButton>
-          <HeaderButton label="拉取" disabled={busy} onClick={actions.pull}>
+          <HeaderButton label="Pull" disabled={busy} onClick={actions.pull}>
             <PullIcon size={16} />
           </HeaderButton>
-          <HeaderButton label="推送" disabled={busy} onClick={actions.push}>
+          <HeaderButton label="Push" disabled={busy} onClick={actions.push}>
             <PushIcon size={16} />
           </HeaderButton>
         </span>

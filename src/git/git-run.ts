@@ -101,7 +101,7 @@ function reasonOf(result: GitResult): string {
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line !== '' && !NOISE.test(line))
-  return lines.join('\n') || `git 退出码 ${String(result.exitCode)}`
+  return lines.join('\n') || `git exit code ${String(result.exitCode)}`
 }
 
 /**
@@ -111,7 +111,7 @@ function reasonOf(result: GitResult): string {
  * @returns the error to throw.
  */
 export function failureOf(result: GitResult, failure: string): GitError {
-  return new GitError(`${failure}：${reasonOf(result)}`)
+  return new GitError(`${failure}: ${reasonOf(result)}`)
 }
 
 /**

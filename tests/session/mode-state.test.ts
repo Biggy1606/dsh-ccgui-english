@@ -53,7 +53,7 @@ describe('ModeState.settle', () => {
     const state = new ModeState(() => MODES, vi.fn(), 'plan')
     const refusal = await state.settle(target(fake), undefined)
     expect(refusal?.mode).toBe('plan')
-    expect(refusal?.notice).toContain('「Default」')
+    expect(refusal?.notice).toContain('“Default”')
   })
 
   it('falls back to the id when the CLI reports a current mode it does not list', async () => {
@@ -62,6 +62,6 @@ describe('ModeState.settle', () => {
     const state = new ModeState(() => MODES, vi.fn(), 'plan')
     state.observe(reported('hidden'))
     const refusal = await state.settle(target(fake), undefined)
-    expect(refusal?.notice).toContain('「hidden」')
+    expect(refusal?.notice).toContain('“hidden”')
   })
 })

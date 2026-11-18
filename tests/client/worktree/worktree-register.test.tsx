@@ -118,8 +118,8 @@ function openFromMenu(h: Harness): void {
 
 async function createBranch(name: string): Promise<void> {
   const user = userEvent.setup()
-  await user.type(await screen.findByLabelText('分支名'), name)
-  await user.click(screen.getByRole('button', { name: '创建 Worktree' }))
+  await user.type(await screen.findByLabelText('Branch name'), name)
+  await user.click(screen.getByRole('button', { name: 'Create Worktree' }))
 }
 
 afterEach(cleanup)
@@ -131,7 +131,7 @@ describe('registerWorktree', () => {
     expect(h.contributions).toHaveLength(1)
     expect(h.contributions[0]).toMatchObject({ id: 'dsh-ccgui.worktree', target: 'workspace', order: 10 })
     expect(h.contributions[0]?.resolve(TARGET)).toEqual([
-      expect.objectContaining({ id: 'new-worktree', label: '新建 Worktree…', icon: { key: 'dsh-ccgui.worktree' } }),
+      expect.objectContaining({ id: 'new-worktree', label: 'New Worktree…', icon: { key: 'dsh-ccgui.worktree' } }),
     ])
     expect(h.registrations.map(({ options }) => options.id ?? options.key)).toEqual([
       'dsh-ccgui.worktree-dialog',
@@ -147,7 +147,7 @@ describe('registerWorktree', () => {
     const { container } = mountHost(h)
     expect(container.innerHTML).toBe('')
     openFromMenu(h)
-    expect(await screen.findByText('基于仓库 app')).toBeTruthy()
+    expect(await screen.findByText('Based on repository app')).toBeTruthy()
     const [url, init] = h.fetchFn.mock.calls[0] ?? []
     expect(url).toBe(`${GIT_ROUTE_PREFIX}/worktree-info`)
     expect(bodyOf(init)).toEqual({ cwd: '/code/app' })
@@ -163,7 +163,7 @@ describe('registerWorktree', () => {
     })
     expect(h.services.workspaces.create).toHaveBeenCalledWith({ path: '/code/app-worktrees/feat-a' })
     expect(h.services.workspaces.rename).toHaveBeenCalledWith('w2', 'app / feat/a')
-    expect(h.services.contextMenus.notify).toHaveBeenCalledWith('已创建 Worktree：feat/a', true)
+    expect(h.services.contextMenus.notify).toHaveBeenCalledWith('Worktree created: feat/a', true)
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
@@ -186,7 +186,7 @@ describe('registerWorktree', () => {
     openFromMenu(h)
     await createBranch('b')
     expect((await screen.findByRole('alert')).textContent).toBe(
-      'Worktree 已创建在 /code/app-worktrees/b，但没能加入侧边栏：busy',
+      'Worktree was created at /code/app-worktrees/b, but could not be added to the sidebar: busy',
     )
     expect(h.services.uiWorkspace.startSession).not.toHaveBeenCalled()
   })
@@ -196,8 +196,8 @@ describe('registerWorktree', () => {
     mountHost(h)
     openFromMenu(h)
     // Wait for the form, so the click does not land on the loading dialog it replaces.
-    await screen.findByText('基于仓库 app')
-    await userEvent.click(screen.getByRole('button', { name: '取消' }))
+    await screen.findByText('Based on repository app')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     openFromMenu(h)
     expect(await screen.findByRole('dialog')).toBeTruthy()
@@ -235,6 +235,6 @@ describe('registerWorktree', () => {
     act(() => {
       props.actions.newWorktree({ workspaceId: 'w1', path: '/code/app', title: 'app', sessionIds: [] })
     })
-    expect(await screen.findByText('基于仓库 app')).toBeTruthy()
+    expect(await screen.findByText('Based on repository app')).toBeTruthy()
   })
 })

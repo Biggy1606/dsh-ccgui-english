@@ -13,11 +13,12 @@ import { MAX_NAME_LENGTH, draftProblem } from './launch-scripts.ts'
 import type { LaunchScriptDraft } from './launch-scripts.ts'
 import { LS } from './launch-script-styles.ts'
 
-const NAME_LABEL = '名称'
-const NAME_PLACEHOLDER = '例如：开发服务器（可留空）'
-const COMMAND_LABEL = '命令'
+const NAME_LABEL = 'Name'
+const NAME_PLACEHOLDER = 'e.g. Development server (optional)'
+const COMMAND_LABEL = 'Command'
 const COMMAND_PLACEHOLDER = 'npm run dev'
-const COMMAND_HINT = '在会话的工作目录下执行。多行命令会逐行执行。⌘/Ctrl + Enter 保存。'
+const COMMAND_HINT =
+  'Runs in the session working directory. Multi-line commands run one line at a time. Press ⌘/Ctrl + Enter to save.'
 
 /** The form's fields, lifted so the dialog's footer can save them. */
 export interface FormState {

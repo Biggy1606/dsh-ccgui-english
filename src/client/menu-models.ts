@@ -17,8 +17,8 @@ import type { DirectoryGroup, DirectoryReasoning, DirectorySelection, DirectoryS
 const ACCOUNT_PROVIDER_ID = 'deepseek-account'
 const OFFICIAL_PROVIDER_ID = 'deepseek-official'
 /** The harness renames this group in its own menu; this one follows. */
-const ACCOUNT_PROVIDER_NAME = 'DeepSeek 账号'
-const MENU_LABEL = '模型'
+const ACCOUNT_PROVIDER_NAME = 'DeepSeek Account'
+const MENU_LABEL = 'Models'
 /** The harness's own label for letting the provider pick the level, untranslated there too. */
 const PROVIDER_DEFAULT_LABEL = 'Default'
 const PROVIDER_DEFAULT_KEY = 'provider-default'

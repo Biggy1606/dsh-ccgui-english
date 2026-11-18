@@ -94,7 +94,7 @@ describe('whenWritable', () => {
 
   it('fails with its own message when a dead terminal gives no reason', async () => {
     const { view } = fakeView({ phase: 'closed', writable: false })
-    await expect(whenWritable(view, 1000)).rejects.toThrow('终端没有准备好')
+    await expect(whenWritable(view, 1000)).rejects.toThrow('Terminal was not ready')
   })
 
   it('gives up after the timeout', async () => {
@@ -102,7 +102,7 @@ describe('whenWritable', () => {
     const { view, listenerCount } = fakeView()
     const ready = whenWritable(view, 500)
     vi.advanceTimersByTime(500)
-    await expect(ready).rejects.toThrow('等待终端超时')
+    await expect(ready).rejects.toThrow('Timed out waiting for the terminal')
     expect(listenerCount()).toBe(0)
   })
 })
@@ -147,7 +147,9 @@ describe('createLaunchRunner', () => {
 
   it('reports a terminal tab that did not open', async () => {
     const { sidebar } = fakeSidebar({ opens: false })
-    await expect(createLaunchRunner(sidebar, terminalsFor()).run('s1', DEV)).rejects.toThrow('没能打开终端标签')
+    await expect(createLaunchRunner(sidebar, terminalsFor()).run('s1', DEV)).rejects.toThrow(
+      'Could not open a terminal tab',
+    )
   })
 
   it('does not type into a terminal that never attached', async () => {

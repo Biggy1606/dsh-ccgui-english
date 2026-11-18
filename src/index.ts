@@ -63,7 +63,8 @@ declare module '@deepseek-ai/cordis' {
  * Shown to turns cut off when this plugin stops. Besides shutdown, the harness restarts a
  * plugin whose files changed, which takes every CLI it started down with it.
  */
-const PLUGIN_STOPPED_REASON = 'dsh-ccgui 插件已停止或重新加载（例如插件更新后），这条回复没有完成，请重新发送。'
+const PLUGIN_STOPPED_REASON =
+  'The dsh-ccgui plugin stopped or reloaded (for example, after an update). This response was not completed; please resend.'
 const PLUGIN_HOME = 'ccgui'
 const MODEL_CACHE_FILE = 'models.json'
 const MODEL_PROBE_DIR = 'model-probe'
@@ -86,10 +87,11 @@ export interface Config {
 }
 
 const REVIEW_ROUTE_UNSET =
-  '「EXP 自动审查」需要一个独立的审查模型，插件不会替你挑选：请在插件配置里设置 reviewProvider（以及可选的 reviewModel），或用 /permission 改用其它访问模式。'
-const REVIEW_ROUTE_IS_CLI = '「EXP 自动审查」的 reviewProvider 不能是 CLI，请设置为 DeepSeek 等非 CLI 的模型提供方。'
+  'EXP Auto Review requires a separate review model; the plugin will not choose one for you. Set reviewProvider (and optionally reviewModel) in the plugin configuration, or use /permission to switch access modes.'
+const REVIEW_ROUTE_IS_CLI =
+  'The reviewProvider for EXP Auto Review cannot be a CLI. Set it to a non-CLI model provider such as DeepSeek.'
 const REVIEW_MODEL_MISSING =
-  '「EXP 自动审查」读不到 reviewProvider 的模型列表，无法确定审查模型：请在插件配置里设置 reviewModel，或检查该提供方的配置。'
+  'EXP Auto Review cannot read the reviewProvider model list to determine a review model. Set reviewModel in the plugin configuration or check the provider configuration.'
 
 /** A stateless provider/model pair that can serve auxiliary requests. */
 interface ReviewRoute {
@@ -235,9 +237,13 @@ export default class CliBridge extends Service {
   private async switchMode(sessionId: string, provider: string, mode: string): Promise<CliModeList | undefined> {
     if (this.registry.isCliRoute(provider)) {
       const { modes } = this.modeState(sessionId, provider)
-      if (modes === undefined) throw new LlmError('还没有读到这个 CLI 的模式列表，请稍后再试。', 'CLI_MODE_FAILED')
+      if (modes === undefined)
+        throw new LlmError(
+          'The mode list for this CLI is not available yet. Please try again later.',
+          'CLI_MODE_FAILED',
+        )
       if (!modes.options.some((option) => option.value === mode)) {
-        throw new LlmError(`这个 CLI 没有报告模式 ${mode}。`, 'CLI_MODE_FAILED')
+        throw new LlmError(`This CLI did not report mode ${mode}.`, 'CLI_MODE_FAILED')
       }
     }
     return this.registry.switchMode(sessionId, provider, mode)

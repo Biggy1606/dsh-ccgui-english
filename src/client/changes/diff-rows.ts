@@ -40,7 +40,7 @@ function rowOf(line: string, cursor: Cursor): { row: DiffRow | undefined; next: 
   if (!cursor.inHunk) {
     // Binary files have no hunks, only this line to say so.
     const row: DiffRow | undefined = line.startsWith('Binary files')
-      ? { kind: 'note', text: '二进制文件，无法显示差异' }
+      ? { kind: 'note', text: 'Binary file; diff cannot be displayed' }
       : undefined
     return { row, next: cursor }
   }

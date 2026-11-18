@@ -45,14 +45,17 @@ async function imageBlock(
   signal: AbortSignal | undefined,
 ): Promise<AcpContentBlock> {
   if (readImage === undefined) {
-    throw new LlmError('当前环境没有附件服务，无法把图片发送给 CLI。', 'UNSUPPORTED_CONTENT')
+    throw new LlmError(
+      'The attachment service is unavailable in this environment; images cannot be sent to the CLI.',
+      'UNSUPPORTED_CONTENT',
+    )
   }
   try {
     const data = await readImage(ref, signal)
     return { type: 'image', mimeType: ref.mediaType, data: Buffer.from(data).toString('base64') }
   } catch (error: unknown) {
     signal?.throwIfAborted()
-    throw new LlmError(`无法读取图片「${imageLabel(ref)}」，这条消息没有发送。`, 'CLI_PROMPT_FAILED', {
+    throw new LlmError(`Could not read image “${imageLabel(ref)}”; the message was not sent.`, 'CLI_PROMPT_FAILED', {
       cause: error,
     })
   }

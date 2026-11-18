@@ -20,9 +20,9 @@ import {
 import type { ModeApi, ModeReply, NativeModes } from './mode-api.ts'
 import { CHEVRON_CLASS, LABEL_CLASS, MODE_CLASS, TRIGGER_CLASS } from './model-menu-styles.ts'
 
-const UNKNOWN_ERROR_LABEL = '未知错误'
+const UNKNOWN_ERROR_LABEL = 'Unknown error'
 /** A pick made before the CLI started only takes effect with the next message. */
-const PENDING_HINT = '，下一条消息发送时生效'
+const PENDING_HINT = ', takes effect with the next message'
 /** How often to ask again while a pick waits for the CLI to take it. */
 export const MODE_POLL_MS = 1500
 /** Enough tries to cover a process that starts slowly, and then the control goes quiet. */
@@ -166,7 +166,7 @@ function ModeTrigger({ label, title, open, busy, locked, onToggle }: TriggerProp
     <button
       type="button"
       className={TRIGGER_CLASS}
-      aria-label={`CLI 模式，当前 ${label}`}
+      aria-label={`CLI mode, current: ${label}`}
       aria-haspopup="menu"
       aria-expanded={open}
       title={title}
@@ -189,7 +189,7 @@ function FailureToast({ failure, root, clear }: FailureToastProps): ReactElement
   return (
     <Toast
       key={failure.seq}
-      text={`切换 CLI 模式失败：${failure.text || UNKNOWN_ERROR_LABEL}`}
+      text={`Failed to change CLI mode: ${failure.text || UNKNOWN_ERROR_LABEL}`}
       icon={<IconWarningOutlineRegular />}
       anchor={root}
       onDone={clear}
@@ -206,7 +206,7 @@ interface Headline {
 function headlineOf(modes: NativeModes, pending: string | undefined): Headline {
   const shown = modes.options.find((option) => option.value === (pending ?? modes.current))
   const label = shown?.name ?? modes.current
-  return { label, title: `CLI 模式：${label}${pending === undefined ? '' : PENDING_HINT}` }
+  return { label, title: `CLI mode: ${label}${pending === undefined ? '' : PENDING_HINT}` }
 }
 
 interface PickerProps {

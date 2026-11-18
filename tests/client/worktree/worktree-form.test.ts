@@ -90,12 +90,12 @@ describe('prNumber and withPr', () => {
 
 describe('formProblem', () => {
   it('names the first missing field', () => {
-    expect(formProblem(form(), INFO)).toBe('请填写分支名')
-    expect(formProblem(form({ branch: 'a', base: ' ' }), INFO)).toBe('请选择基准分支')
-    expect(formProblem(form({ mode: 'existing' }), INFO)).toBe('请选择分支')
-    expect(formProblem(form({ mode: 'pr' }), INFO)).toBe('请填写 PR 编号或链接')
-    expect(formProblem(form({ mode: 'pr', pr: '1' }), INFO)).toBe('请填写分支名')
-    expect(formProblem(form({ branch: '///' }), INFO)).toBe('请填写位置')
+    expect(formProblem(form(), INFO)).toBe('Enter a branch name')
+    expect(formProblem(form({ branch: 'a', base: ' ' }), INFO)).toBe('Select a base branch')
+    expect(formProblem(form({ mode: 'existing' }), INFO)).toBe('Select a branch')
+    expect(formProblem(form({ mode: 'pr' }), INFO)).toBe('Enter a PR number or link')
+    expect(formProblem(form({ mode: 'pr', pr: '1' }), INFO)).toBe('Enter a branch name')
+    expect(formProblem(form({ branch: '///' }), INFO)).toBe('Enter a location')
   })
 
   it('accepts a complete form', () => {

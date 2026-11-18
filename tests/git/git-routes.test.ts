@@ -50,7 +50,7 @@ describe('git routes', () => {
     rejection = 401
     const response = await post('status', { cwd: repo })
     expect(response.status).toBe(401)
-    expect(await response.json()).toEqual({ success: false, error: '未授权' })
+    expect(await response.json()).toEqual({ success: false, error: 'Unauthorized' })
   })
 
   it('accepts only POST and known operations', async () => {
@@ -65,7 +65,7 @@ describe('git routes', () => {
     expect((await post('status', { cwd: 'relative' })).status).toBe(400)
     const refused = await post('stage', { cwd: repo, paths: ['missing.txt'] })
     expect(refused.status).toBe(409)
-    expect(((await refused.json()) as { error: string }).error).toContain('暂存失败')
+    expect(((await refused.json()) as { error: string }).error).toContain('Failed to stage')
     expect((await post('status', 'x'.repeat(1024 * 1024 + 1))).status).toBe(413)
     expect(warn).not.toHaveBeenCalled()
   })
@@ -88,7 +88,7 @@ describe('git routes', () => {
     })
     await new Promise((resolve) => failing.close(resolve))
     expect(response.status).toBe(500)
-    expect(await response.json()).toEqual({ success: false, error: 'Git 操作失败，请查看日志' })
+    expect(await response.json()).toEqual({ success: false, error: 'Git operation failed; check the logs' })
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('spawn exploded'))
   })
 

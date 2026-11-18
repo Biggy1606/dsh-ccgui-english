@@ -80,13 +80,17 @@ export class ModelState {
       // A new model can bring other reasoning levels, reported in the same answer.
       this.onOptions?.(options, false)
       const confirmed = readModelList(options)?.current
-      if (confirmed !== undefined && confirmed !== target) throw new Error(`CLI 仍在使用 ${confirmed}`)
+      if (confirmed !== undefined && confirmed !== target) throw new Error(`CLI is still using ${confirmed}`)
       this.active = target
     } catch (error: unknown) {
       if (signal?.aborted === true) throw error
-      throw new LlmError(`${where.label} 无法切换到模型 ${target}：${errorMessage(error)}`, 'CLI_MODEL_FAILED', {
-        cause: error,
-      })
+      throw new LlmError(
+        `${where.label} could not switch to model ${target}: ${errorMessage(error)}`,
+        'CLI_MODEL_FAILED',
+        {
+          cause: error,
+        },
+      )
     }
   }
 }

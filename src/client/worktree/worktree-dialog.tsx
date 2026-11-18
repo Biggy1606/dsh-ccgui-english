@@ -37,14 +37,14 @@ type InfoState =
   | { readonly phase: 'ready'; readonly info: RepoInfo }
   | { readonly phase: 'failed'; readonly message: string }
 
-const TITLE = '新建 Worktree'
-const CLOSE = '关闭'
-const CANCEL = '取消'
-const CREATE = '创建 Worktree'
-const CREATING = '正在创建…'
-const LOADING = '正在读取仓库信息…'
-const NOT_A_REPO = '这个工作区不在 Git 仓库里，无法创建 worktree。'
-const NOT_READY = '还没有读到仓库信息'
+const TITLE = 'New Worktree'
+const CLOSE = 'Close'
+const CANCEL = 'Cancel'
+const CREATE = 'Create Worktree'
+const CREATING = 'Creating…'
+const LOADING = 'Loading repository information…'
+const NOT_A_REPO = 'This workspace is not in a Git repository; a worktree cannot be created.'
+const NOT_READY = 'Repository information is not available yet'
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -150,7 +150,7 @@ export function WorktreeDialog(props: WorktreeDialogProps): ReactElement {
     <Modal
       open
       title={TITLE}
-      {...(info === undefined ? {} : { description: `基于仓库 ${info.name}` })}
+      {...(info === undefined ? {} : { description: `Based on repository ${info.name}` })}
       closeLabel={CLOSE}
       className={WT.dialog}
       onClose={busy ? () => undefined : props.onClose}

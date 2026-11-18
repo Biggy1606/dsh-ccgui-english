@@ -29,20 +29,20 @@ afterEach(() => {
 
 describe('SettingsPage', () => {
   async function openFeatures(): Promise<void> {
-    await userEvent.click(screen.getByRole('tab', { name: '界面交互' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Interface' }))
   }
 
   it('opens on the CLI list, with a tab per group of options', () => {
     render(
       <SettingsPage settings={createFeatureSettings(memoryStorage())} cliPrefs={createCliPrefs(memoryStorage())} />,
     )
-    expect(screen.getByRole('heading', { name: 'CC GUI 设置' })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'CC GUI Settings' })).toBeDefined()
     expect(screen.getByRole('link', { name: 'GitHub' })).toBeDefined()
     const tabs = screen.getAllByRole('tab')
-    expect(tabs.map((tab) => tab.textContent)).toEqual(['CLI 列表', '界面交互', '更多功能', '版本记录'])
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['CLI List', 'Interface', 'More Features', 'Release Notes'])
     expect(tabs.map((tab) => tab.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false', 'false'])
-    expect(screen.getByRole('tabpanel', { name: 'CLI 列表' })).toBeDefined()
-    expect(screen.getByText('打开任一会话后，这里会列出可切换的 CLI。')).toBeDefined()
+    expect(screen.getByRole('tabpanel', { name: 'CLI List' })).toBeDefined()
+    expect(screen.getByText('Open a session to see the available CLIs here.')).toBeDefined()
     expect(screen.queryByRole('switch')).toBeNull()
   })
 
@@ -51,7 +51,7 @@ describe('SettingsPage', () => {
     settings.set('terminalEntry', false)
     render(<SettingsPage settings={settings} cliPrefs={createCliPrefs(memoryStorage())} />)
     await openFeatures()
-    expect(screen.getByRole('tabpanel', { name: '界面交互' })).toBeDefined()
+    expect(screen.getByRole('tabpanel', { name: 'Interface' })).toBeDefined()
     const switches = screen.getAllByRole('switch')
     expect(switches.map((element) => element.getAttribute('aria-label'))).toEqual(FEATURES.map((f) => f.title))
     expect(switches.map((element) => element.getAttribute('aria-checked'))).toEqual(
@@ -64,7 +64,7 @@ describe('SettingsPage', () => {
     const settings = createFeatureSettings(memoryStorage())
     render(<SettingsPage settings={settings} cliPrefs={createCliPrefs(memoryStorage())} />)
     await openFeatures()
-    const files = screen.getByRole('switch', { name: '右侧栏默认打开工作区文件' })
+    const files = screen.getByRole('switch', { name: 'Open workspace files by default' })
     await userEvent.click(files)
     expect(settings.getSnapshot().filesDefault).toBe(false)
     expect(files.getAttribute('aria-checked')).toBe('false')
@@ -76,13 +76,13 @@ describe('SettingsPage', () => {
     render(
       <SettingsPage settings={createFeatureSettings(memoryStorage())} cliPrefs={createCliPrefs(memoryStorage())} />,
     )
-    await userEvent.click(screen.getByRole('tab', { name: '更多功能' }))
-    const panel = screen.getByRole('tabpanel', { name: '更多功能' })
+    await userEvent.click(screen.getByRole('tab', { name: 'More Features' }))
+    const panel = screen.getByRole('tabpanel', { name: 'More Features' })
     for (const feature of UPCOMING_FEATURES) {
       expect(screen.getByText(feature.title)).toBeDefined()
       expect(screen.getByText(feature.description)).toBeDefined()
     }
-    expect(screen.getAllByText('即将开放…')).toHaveLength(UPCOMING_FEATURES.length)
+    expect(screen.getAllByText('Coming soon…')).toHaveLength(UPCOMING_FEATURES.length)
     expect(panel.querySelectorAll('button, a, input, select, [role="switch"]')).toHaveLength(0)
   })
 
@@ -90,10 +90,10 @@ describe('SettingsPage', () => {
     render(
       <SettingsPage settings={createFeatureSettings(memoryStorage())} cliPrefs={createCliPrefs(memoryStorage())} />,
     )
-    await userEvent.click(screen.getByRole('tab', { name: '版本记录' }))
-    expect(screen.getByRole('tabpanel', { name: '版本记录' })).toBeDefined()
-    expect(screen.getByRole('button', { name: '上一页' }).getAttribute('disabled')).not.toBeNull()
-    expect(screen.getByRole('button', { name: '下一页' })).toBeDefined()
+    await userEvent.click(screen.getByRole('tab', { name: 'Release Notes' }))
+    expect(screen.getByRole('tabpanel', { name: 'Release Notes' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Previous page' }).getAttribute('disabled')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDefined()
   })
 
   it('draws its navigation icon at the requested size and ships styles for its classes', () => {
@@ -126,7 +126,7 @@ describe('registerSettingsPage', () => {
       name: 'settings.section',
       id: SETTINGS_SECTION_ID,
       order: 50,
-      label: 'CC GUI 设置',
+      label: 'CC GUI Settings',
     })
     expect(section?.options.inject?.()).toEqual({ settings, cliPrefs })
     expect(section?.component).toBe(SettingsPage)
@@ -151,7 +151,7 @@ describe('registerSettingsPage', () => {
     )
     const Component = page?.component as ComponentType<Record<string, unknown>>
     render(<Component {...(page?.inject?.() as Record<string, unknown>)} />)
-    await userEvent.click(screen.getByRole('tab', { name: '界面交互' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Interface' }))
     expect(screen.getAllByRole('switch')).toHaveLength(FEATURES.length)
   })
 })

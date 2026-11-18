@@ -53,8 +53,8 @@ describe('CliModeSeat', () => {
     const modes = api()
     const { container } = render(<CliModeSeat directory={storeOf(CLI_DIRECTORY)} modes={modes} session={undefined} />)
     expect(container.querySelector('.dsh-cli-mode-seat')).not.toBeNull()
-    expect((await screen.findByRole('button', { name: /CLI 模式/ })).getAttribute('aria-label')).toBe(
-      'CLI 模式，当前 Default',
+    expect((await screen.findByRole('button', { name: /CLI mode/ })).getAttribute('aria-label')).toBe(
+      'CLI mode, current: Default',
     )
     expect(modes.read).toHaveBeenCalledWith('cli-fake')
   })
@@ -75,7 +75,7 @@ describe('CliModeSeat', () => {
     await vi.waitFor(() => {
       expect(modes.read).toHaveBeenCalled()
     })
-    expect(screen.queryByRole('button', { name: /CLI 模式/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /CLI mode/ })).toBeNull()
   })
 
   it('shows nothing when the harness offers no mode route', () => {

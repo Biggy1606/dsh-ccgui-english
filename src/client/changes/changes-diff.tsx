@@ -18,9 +18,9 @@ type Loaded =
   | { readonly kind: 'error'; readonly message: string }
   | ({ readonly kind: 'rows' } & DiffRows)
 
-const SIDE_LABELS = { staged: '已暂存', unstaged: '未暂存', untracked: '未跟踪' } as const
-const TRUNCATED = 'Diff 过大，已截断'
-const NO_CHANGES = '没有可显示的差异'
+const SIDE_LABELS = { staged: 'Staged', unstaged: 'Unstaged', untracked: 'Untracked' } as const
+const TRUNCATED = 'Diff is too large and has been truncated'
+const NO_CHANGES = 'No differences to display'
 
 function Line({ row }: { readonly row: DiffRow }): ReactElement {
   if (row.kind === 'hunk' || row.kind === 'note') {
@@ -66,7 +66,7 @@ function useDiff(api: GitApi, diff: OpenDiff): Loaded {
 }
 
 function Body({ loaded }: { readonly loaded: Loaded }): ReactElement {
-  if (loaded.kind === 'loading') return <div className={CLS.empty}>加载中…</div>
+  if (loaded.kind === 'loading') return <div className={CLS.empty}>Loading…</div>
   if (loaded.kind === 'error') return <div className={CLS.error}>{loaded.message}</div>
   return (
     <div className={CLS.diffBody}>
@@ -94,7 +94,7 @@ export function ChangesDiff({
   return (
     <div className={CLS.diff}>
       <div className={CLS.diffHeader}>
-        <button type="button" className={CLS.headerButton} title="返回" aria-label="返回" onClick={onBack}>
+        <button type="button" className={CLS.headerButton} title="Back" aria-label="Back" onClick={onBack}>
           <BackIcon size={16} />
         </button>
         <span className={CLS.diffPath} title={diff.entry.path}>

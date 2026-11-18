@@ -103,8 +103,8 @@ const HOST_ID = 'dsh-ccgui.worktree-dialog'
 const TREE_ID = 'dsh-ccgui.worktree-tree'
 /** First in the menu, ahead of the harness's 重命名 (100), as in CC GUI. */
 const MENU_ORDER = 10
-const LABEL = '新建 Worktree…'
-const CREATED = '已创建 Worktree：'
+const LABEL = 'New Worktree…'
+const CREATED = 'Worktree created: '
 
 function dialogRequests(): DialogRequests {
   let target: WorkspaceTarget | undefined
@@ -140,7 +140,10 @@ function finisher(services: WorktreeServices): (created: CreatedWorktree) => Pro
     try {
       workspaceId = (await services.workspaces.create({ path: created.path })).workspaceId
     } catch (error: unknown) {
-      throw new Error(`Worktree 已创建在 ${created.path}，但没能加入侧边栏：${messageOf(error)}`, { cause: error })
+      throw new Error(
+        `Worktree was created at ${created.path}, but could not be added to the sidebar: ${messageOf(error)}`,
+        { cause: error },
+      )
     }
     try {
       await services.workspaces.rename(workspaceId, created.title)

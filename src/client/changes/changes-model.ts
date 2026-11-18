@@ -50,9 +50,9 @@ export type GroupId = 'staged' | 'unstaged' | 'untracked'
 export const GROUP_IDS: readonly GroupId[] = ['staged', 'unstaged', 'untracked']
 
 export const GROUP_TITLES: Readonly<Record<GroupId, string>> = {
-  staged: '已暂存',
-  unstaged: '未暂存',
-  untracked: '未跟踪',
+  staged: 'Staged',
+  unstaged: 'Unstaged',
+  untracked: 'Untracked',
 }
 
 export interface Summary {
@@ -164,12 +164,12 @@ export function splitPath(path: string): { readonly dir: string; readonly name: 
 
 /** What each status letter means, for the letter's tooltip. */
 export const STATUS_LABELS: Readonly<Record<ChangeStatus, string>> = {
-  M: '已修改',
-  A: '新文件',
-  D: '已删除',
-  R: '已重命名',
-  C: '已复制',
-  T: '类型已变',
-  U: '有冲突',
-  '?': '未跟踪',
+  M: 'Modified',
+  A: 'New file',
+  D: 'Deleted',
+  R: 'Renamed',
+  C: 'Copied',
+  T: 'Type changed',
+  U: 'Conflicted',
+  '?': 'Untracked',
 }

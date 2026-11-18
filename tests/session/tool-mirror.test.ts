@@ -165,7 +165,7 @@ describe('ToolMirror: failing open calls', () => {
 
     expect(mirror.get('open')).toMatchObject({
       status: 'failed',
-      rawOutput: 'CLI 在这个工具完成之前结束了本轮。',
+      rawOutput: 'The CLI ended this turn before the tool completed.',
       permissionRequested: false,
     })
     expect(mirror.get('done')).toMatchObject({ status: 'completed', rawOutput: 'ok' })

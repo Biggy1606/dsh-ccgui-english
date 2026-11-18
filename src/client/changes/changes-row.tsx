@@ -62,8 +62,8 @@ function RowActions({ group, entry, busy, actions }: RowProps): ReactElement {
         <button
           type="button"
           className={CLS.iconButton}
-          title="撤销更改"
-          aria-label="撤销更改"
+          title="Discard changes"
+          aria-label="Discard changes"
           disabled={busy}
           onClick={() => {
             actions.discard(group, [entry])
@@ -75,8 +75,8 @@ function RowActions({ group, entry, busy, actions }: RowProps): ReactElement {
       <button
         type="button"
         className={CLS.iconButton}
-        title={staged ? '取消暂存' : '暂存'}
-        aria-label={staged ? '取消暂存' : '暂存'}
+        title={staged ? 'Unstage' : 'Stage'}
+        aria-label={staged ? 'Unstage' : 'Stage'}
         disabled={busy}
         onClick={() => {
           if (staged) actions.unstage([entry.path])
@@ -134,7 +134,7 @@ export function FileRow(props: RowProps & { readonly selected: boolean }): React
         type="checkbox"
         className={CLS.checkbox}
         checked={selected}
-        aria-label={`选择 ${entry.path}`}
+        aria-label={`Select ${entry.path}`}
         onChange={(event) => {
           actions.select([entry.path], event.target.checked)
         }}

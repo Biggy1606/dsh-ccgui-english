@@ -83,7 +83,7 @@ describe('CliBridge mode route', () => {
     })
     await expect(post(modes, { sessionId: 'dsh-1', provider: 'cli-fake', mode: 'plan' })).resolves.toMatchObject({
       success: false,
-      error: expect.stringContaining('还没有读到') as unknown,
+      error: expect.stringContaining('not available yet') as unknown,
     })
 
     await fiber.dispose()

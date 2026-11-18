@@ -92,7 +92,7 @@ export async function withinStartTimeout(work: () => Promise<void>, timeoutMs: n
   const { promise: timedOut, reject } = Promise.withResolvers<never>()
   const seconds = Math.ceil(timeoutMs / MS_PER_SECOND)
   const timer = setTimeout(() => {
-    reject(new Error(`等了 ${seconds} 秒没有响应`))
+    reject(new Error(`No response after ${seconds} seconds`))
   }, timeoutMs)
   timer.unref()
   try {

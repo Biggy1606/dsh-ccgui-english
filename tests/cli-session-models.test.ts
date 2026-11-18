@@ -186,7 +186,7 @@ describe('CliSession model selection', () => {
       const chunks = await collect(session.stream({ messages: history }))
       expect(fake.resumed).toEqual([])
       expect(fake.newSessions).toHaveLength(1)
-      expect(textOf(chunks)).toContain('无法恢复')
+      expect(textOf(chunks)).toContain('could not resume')
     })
   })
 
@@ -228,6 +228,6 @@ describe('CliSession model selection', () => {
     session.abandonTurn()
     fake.setConfigError = undefined
     const chunks = await collect(session.stream({ messages: [...messages, user('2', 'again')], model: 'large' }))
-    expect(textOf(chunks)).toContain('无法恢复')
+    expect(textOf(chunks)).toContain('could not resume')
   })
 })

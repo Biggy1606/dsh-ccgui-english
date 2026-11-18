@@ -57,14 +57,18 @@ export class EffortState {
       )
       this.report(options)
       const confirmed = readEffortList(options)?.current
-      if (confirmed !== undefined && confirmed !== effort) throw new Error(`CLI 仍在使用 ${confirmed}`)
+      if (confirmed !== undefined && confirmed !== effort) throw new Error(`CLI is still using ${confirmed}`)
       this.active = effort
       return undefined
     } catch (error: unknown) {
       if (signal?.aborted === true) throw error
-      throw new LlmError(`${where.label} 无法切换到思考强度 ${effort}：${errorMessage(error)}`, 'CLI_EFFORT_FAILED', {
-        cause: error,
-      })
+      throw new LlmError(
+        `${where.label} could not switch to reasoning effort ${effort}: ${errorMessage(error)}`,
+        'CLI_EFFORT_FAILED',
+        {
+          cause: error,
+        },
+      )
     }
   }
 }

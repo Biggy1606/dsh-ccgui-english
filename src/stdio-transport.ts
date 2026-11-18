@@ -39,7 +39,7 @@ const UNSIGNED_EXIT_RANGE = 0x1_00_00_00_00
 
 function exitCodeText(exitCode: number | null): string {
   if (exitCode === null || exitCode < UNSIGNED_EXIT_FROM) return String(exitCode)
-  return `${exitCode}（即 ${exitCode - UNSIGNED_EXIT_RANGE}）`
+  return `${exitCode} (signed: ${exitCode - UNSIGNED_EXIT_RANGE})`
 }
 
 function stderrTail(child: SubprocessHandle): string {
@@ -82,8 +82,10 @@ function turnStderr(child: SubprocessHandle): TurnStderr {
 
 function describeExit(outcome: SubprocessOutcome, stderr: string): string {
   const exit =
-    outcome.signal === null ? `进程退出，退出码 ${exitCodeText(outcome.exitCode)}` : `进程被信号 ${outcome.signal} 终止`
-  return stderr === '' ? exit : `${exit}。它退出前的输出：${stderr}`
+    outcome.signal === null
+      ? `Process exited with code ${exitCodeText(outcome.exitCode)}`
+      : `Process terminated by signal ${outcome.signal}`
+  return stderr === '' ? exit : `${exit}. Output before exit: ${stderr}`
 }
 
 async function exitsWithin(child: SubprocessHandle, ms: number): Promise<boolean> {
@@ -110,7 +112,7 @@ async function stopChild(child: SubprocessHandle, eofGraceMs: number): Promise<v
 function closeReason(child: SubprocessHandle): Promise<Error> {
   const timeout = new Promise<Error>((resolve) => {
     setTimeout(() => {
-      resolve(new Error('连接已关闭'))
+      resolve(new Error('Connection closed'))
     }, CLOSE_REASON_WAIT_MS).unref()
   })
   const exit = child.done.then(
