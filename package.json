@@ -1,6 +1,6 @@
 {
   "name": "dsh-ccgui",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Use OpenCode, Codex, Claude Code and other ACP agents directly in DeepSeek Harness",
   "icon": "./assets/logo.png",
   "license": "MIT",
