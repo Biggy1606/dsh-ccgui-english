@@ -1,9 +1,9 @@
 /// <reference lib="dom" />
 
 /**
- * Browser half: a switcher and a model menu in the composer's tool row. The harness offers
- * slots for compact controls there, and both reuse the model directory, so they stay in
- * step with each other and with the harness's own model menu. A terminal button in the
+ * Browser half: a CLI switcher in the composer's tool row and favorite model shortcuts in the
+ * harness's own model menu. The switcher reuses the model directory, so it stays in step with
+ * that menu and with the CLI's modes beside it. A terminal button in the
  * session header (see terminal-entry.tsx) saves the trip through the right sidebar, a startup
  * script control beside it (see launch-script-entry.tsx) runs saved commands there,
  * "添加到对话" in file context menus (see add-to-chat.tsx) mentions a path in the composer, and
@@ -27,7 +27,6 @@ import { createFavoriteModels } from './favorite-models.ts'
 import type { FavoriteModels } from './favorite-models.ts'
 import { ProviderMark } from './marks.tsx'
 import { CliModeSeat } from './mode-seat.tsx'
-import { CliModelMenu } from './model-menu.tsx'
 import { MODEL_MENU_STYLES } from './model-menu-styles.ts'
 import { NATIVE_FAVORITES_STYLES, NativeFavorites } from './native-favorites.tsx'
 import { modeApiFor } from './mode-api.ts'
@@ -86,7 +85,12 @@ interface ClientContext {
   slots: {
     inject(name: string, add: () => unknown): void
     register(
-      options: { name: string; id: string; order?: number; inject(sessionId: string): unknown },
+      options: {
+        name: string
+        id: string
+        order?: number
+        inject(sessionId: string): unknown
+      },
       component: unknown,
     ): unknown
   }
@@ -105,15 +109,12 @@ interface ClientContext {
 }
 
 const SLOT = 'conversation.input.left'
-const MODEL_SLOT = 'conversation.input.right'
 const NATIVE_MODEL_OPTIONS_SLOT = 'conversation.input.model.options'
 /** Beside the CLI switcher: a CLI's mode belongs to that CLI session, read next to its name. */
 const MODE_SLOT = 'conversation.input.left'
 /** Right after the switcher, which registers with the default order. */
 const MODE_SEAT_ORDER = 1
 const SESSION_ROW_SLOT = 'sidebar.session.row.leading'
-/** Keeps the menu last in its slot, which is where the harness's own seat would be. */
-const MODEL_MENU_ORDER = 1000
 /** Runs after the harness's own marks, which outrank this one in the row's single cell. */
 const SESSION_MARK_ORDER = 20
 const WRAP_CLASS = 'dsh-cli-switcher-wrap'
@@ -325,9 +326,8 @@ function registerSwitchableFeatures(ctx: ClientContext, settings: FeatureSetting
 export const inject = ['slots', 'modelDirectories', 'sessions']
 
 /**
- * Put the composer's controls in their seats: the CLI switcher, the model menu that takes
- * the harness's seat on CLI sessions only, and the CLI's modes in the seat that answers
- * "what may run".
+ * Put the composer's controls in their seats: the CLI switcher, favorite shortcuts in the
+ * harness's model menu, and the CLI's modes in the seat that answers "what may run".
  * @param ctx - the plugin's client context.
  * @param cliPrefs - the remembered CLI choice, which the switcher orders itself by.
  * @param favorites - the browser's remembered model favorites.
@@ -341,17 +341,6 @@ function registerComposerSlots(ctx: ClientContext, cliPrefs: CliPrefs, favorites
         inject: (sessionId) => ({ ...directoryFace(ctx, sessionId), prefs: cliPrefs }),
       },
       CliSwitcher,
-    ),
-  )
-  ctx.slots.inject(MODEL_SLOT, () =>
-    ctx.slots.register(
-      {
-        name: MODEL_SLOT,
-        id: 'dsh-ccgui.model-menu',
-        order: MODEL_MENU_ORDER,
-        inject: (sessionId) => ({ ...directoryFace(ctx, sessionId), favorites }),
-      },
-      CliModelMenu,
     ),
   )
   ctx.slots.inject(NATIVE_MODEL_OPTIONS_SLOT, () =>
@@ -415,7 +404,8 @@ function registerSessionMarks(ctx: ClientContext): void {
 }
 
 /**
- * Add the switcher and the model menu to the composer, and a terminal button to the header.
+ * Add the switcher and the favorite model section to the composer, and a terminal button to
+ * the header.
  * @param ctx - the plugin's client context.
  */
 export function apply(ctx: ClientContext): void {

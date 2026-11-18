@@ -101,32 +101,29 @@ export async function openHarness() {
     await chooseCli(name)
   }
 
-  const modelTrigger = () =>
-    page.getByRole('button', { name: /^(Select model, current:|Select a model|Loading models…)/ }).last()
-
   /**
-   * A harness session renders no plugin control and keeps its native seat, whose label the
-   * host localizes; the model list opens from whichever trigger the session actually has.
+   * The harness's own picker is the composer's only model control, so it is found by its
+   * seat rather than by a label, which the host localizes.
    */
-  async function visibleModelTrigger() {
-    const pluginTrigger = modelTrigger()
-    const pluginShown = await pluginTrigger.isVisible().catch(() => false)
-    return pluginShown ? pluginTrigger : page.getByRole('button', { name: /^(选择模型|请选择模型)/ }).last()
-  }
+  const modelTrigger = () =>
+    page.locator('[data-slot="conversation.input.model"] button').filter({ visible: true }).last()
 
   /** Escape only steps back a level in this menu, so repeat until it has closed. */
   async function closeModelMenu() {
-    const trigger = await visibleModelTrigger()
+    const trigger = modelTrigger()
     for (let i = 0; i < 3 && (await trigger.getAttribute('aria-expanded')) === 'true'; i += 1) {
       await page.keyboard.press('Escape')
       await sleep(250)
     }
   }
 
+  /**
+   * Open the harness's model list on its rows. A host that shows a root menu first drills
+   * into its model pane; a flat one opens straight on the rows.
+   */
   async function openModelList() {
     await closeModelMenu()
-    const trigger = await visibleModelTrigger()
-    await trigger.click()
+    await modelTrigger().click()
     await sleep(300)
     const drill = page.getByRole('menuitem', { name: /^模型/ }).first()
     if (await drill.isVisible().catch(() => false)) await drill.click()
@@ -229,6 +226,8 @@ export async function openHarness() {
     modelTrigger,
     modelNames,
     chooseModel,
+    openModelList,
+    closeModelMenu,
     openSession,
     openCcguiSettings,
     closeSettings,

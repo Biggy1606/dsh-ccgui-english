@@ -133,11 +133,10 @@ describe('apply', () => {
     expect(inject).toEqual(['slots', 'modelDirectories', 'sessions'])
   })
 
-  it('registers the switcher, the model menu, the mode seat, the session mark and the settings section in their slots', () => {
+  it('registers the switcher, the favorite model section, the mode seat, the session mark and the settings section in their slots', () => {
     const h = harness()
     expect(h.registrations.map(({ options }) => [options.id, options.name, options.order])).toEqual([
       ['dsh-ccgui.switcher', 'conversation.input.left', undefined],
-      ['dsh-ccgui.model-menu', 'conversation.input.right', 1000],
       ['dsh-ccgui.native-favorites', 'conversation.input.model.options', undefined],
       ['dsh-ccgui.session-mark', 'sidebar.session.row.leading', 20],
       ['dsh-ccgui.mode-seat', 'conversation.input.left', 1],
@@ -168,7 +167,7 @@ describe('apply', () => {
     const dispose = h.effects[0]?.()
     const tag = document.head.querySelector('style[data-plugin="dsh-ccgui"]')
     expect(tag?.textContent).toContain('.dsh-cli-switcher')
-    expect(tag?.textContent).toContain('.dsh-cli-model-menu')
+    expect(tag?.textContent).toContain('.dsh-cli-model-trigger')
     expect(tag?.textContent).toContain('.dsh-cli-terminal-entry')
     expect(tag?.textContent).toContain('[data-row-key^="session:"]')
     expect(tag?.textContent).toContain('.dsh-ccgui-changes-row')
@@ -178,9 +177,9 @@ describe('apply', () => {
     expect(document.head.querySelector('style[data-plugin="dsh-ccgui"]')).toBeNull()
   })
 
-  it('offers the model menu only to sessions that are not addressed subagents', () => {
+  it('offers native favorite options only to sessions that are not addressed subagents', () => {
     const h = harness()
-    const menu = registered(h, 'dsh-ccgui.model-menu').options
+    const menu = registered(h, 'dsh-ccgui.native-favorites').options
     expect(menu.inject('s1')).toMatchObject({ available: true, session: h.session })
     h.subagent = { parent: 's0' }
     expect(menu.inject('s1')).toMatchObject({ available: false })

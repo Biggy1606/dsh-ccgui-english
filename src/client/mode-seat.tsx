@@ -11,7 +11,6 @@
 import type { ReactElement } from 'react'
 import { isCliRoute } from '../constants.ts'
 import type { DirectoryState } from './choices.ts'
-import { menuModels } from './menu-models.ts'
 import type { ModeApi } from './mode-api.ts'
 import { ModeMenu } from './mode-menu.tsx'
 import { MODE_SEAT_CLASS } from './model-menu-styles.ts'
@@ -38,7 +37,7 @@ export function CliModeSeat({ directory, modes, session }: ModeSeatInjected): Re
   const state = useStore(directory)
   const locked = useRemoved(session)
   const started = useStarted(session)
-  const provider = menuModels(state).current?.provider
+  const provider = state.current?.provider
   if (!isCliRoute(provider)) return null
   return (
     <span className={MODE_SEAT_CLASS}>

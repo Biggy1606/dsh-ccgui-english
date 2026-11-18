@@ -57,7 +57,7 @@ lint 强制的上限：源码单文件 500 行、测试单文件 800 行（都�
 | `src/session/` | `CliSession` 的协作对象：连接（connect）、回合队列（turn-queue）、工具镜像（tool-mirror、drive-tool）、权限队列（permission-queue）、模型（model-state）、读取 step（read-step）、结束原因（outcomes） |
 | `src/stdio-transport.ts`、`src/transport.ts` | ACP 传输：子进程和协议细节 |
 | `src/session-registry.ts`、`src/adapter.ts`、`src/cli-tool.ts` | 会话注册、作为模型提供方接入、镜像工具 |
-| `src/client/` | 浏览器端 UI：CLI 切换器、模型菜单、图标 |
+| `src/client/` | 浏览器端 UI：CLI 切换器、原生模型菜单中的收藏区、图标 |
 
 ### 新增一个 CLI
 

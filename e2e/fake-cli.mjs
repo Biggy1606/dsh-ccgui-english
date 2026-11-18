@@ -17,6 +17,8 @@ const {
   modelTrigger,
   modelNames,
   chooseModel,
+  openModelList,
+  closeModelMenu,
   send,
   scenario,
   finish,
@@ -79,18 +81,18 @@ await scenario('lazy: opening the app starts no CLI', async () => {
   if (running !== '') throw new Error(`already running: ${running}`)
 })
 
-// The harness's own model seat carries settings such as the agent-team toggle, so a session
-// it runs keeps that seat and its native menu. Only a CLI session replaces it.
-await scenario('seat: a harness session keeps its native model control', async () => {
-  if ((await page.locator('.dsh-cli-model').count()) !== 0) throw new Error("the plugin's control replaced the seat")
+// The harness's own model seat is the composer's only model control, on every session:
+// the plugin adds its own controls beside it instead of replacing it.
+await scenario('seat: a harness session uses the native model control', async () => {
   const seats = await harnessSeatDisplays()
   if (seats.length === 0 || seats.some((display) => display === 'none'))
     throw new Error(`harness seat hidden or missing: ${seats.join()}`)
+  const controls = await page.locator('[data-slot="conversation.input.model"] button').filter({ visible: true }).count()
+  if (controls !== 1) throw new Error(`model controls on the composer: ${controls}`)
   await shot('native-model-seat')
-  // The native seat reads one global catalog, and both surfaces now list every provider:
-  // a harness session can move to a CLI from here, and a CLI session can move back.
-  await page.locator('[data-slot="conversation.input.model"] button').first().click()
-  await sleep(400)
+  // The native seat reads one global catalog, so a harness session can move to a CLI from
+  // here, and a CLI session can move back.
+  await openModelList()
   const visibleCliGroups = await page
     .locator('section[data-menu-group]:has([data-provider-id^="cli-"])')
     .evaluateAll((nodes) => nodes.filter((node) => getComputedStyle(node).display !== 'none').length)
@@ -108,8 +110,7 @@ await scenario('seat: a harness session keeps its native model control', async (
   const probeDisplay = await page.locator('#harness-provider-probe').evaluate((node) => getComputedStyle(node).display)
   if (probeDisplay === 'none') throw new Error('the native menu hides a harness provider')
   await shot('native-model-seat-all-providers')
-  await page.keyboard.press('Escape')
-  await sleep(250)
+  await closeModelMenu()
   // This session is the harness's own, so the access control keeps the composer's seat
   // and the CLI's mode control stays out of it.
   if ((await page.getByRole('button', { name: /^访问模式/ }).count()) === 0) throw new Error('no access control')
@@ -255,92 +256,54 @@ await scenario('models: the menu shows what the CLI reports, naming its default'
   await newCliSession(FAKE)
   await until(async () => (await modelNames(FAKE)).length === 2, 'two model rows', 30_000)
   const names = await modelNames(FAKE)
-  if (names.join() !== 'Fake Small（默认）,Fake Large') throw new Error(`rows: ${names.join()}`)
+  if (names.join() !== 'Fake Small (default),Fake Large') throw new Error(`rows: ${names.join()}`)
 })
 
-await scenario("flat menu: one click shows this CLI's models among every provider, with no second level", async () => {
-  await modelTrigger().click()
-  await sleep(300)
+// The native picker is the only model menu, and it groups every provider's models with this
+// CLI's among them.
+await scenario('menu: the native picker lists this CLI among every provider', async () => {
+  await openModelList()
+  const headings = await page
+    .locator('[data-menu-group-heading]')
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() ?? ''))
+  if (!headings.includes(FAKE) || headings.length < 2) throw new Error(`provider groups: ${headings.join()}`)
   const names = await page
     .getByRole('group', { name: FAKE, exact: true })
     .getByRole('menuitemradio')
     .evaluateAll((rows) => rows.map((row) => row.getAttribute('title')))
-  if (names.join() !== 'Fake Small（默认）,Fake Large') throw new Error(`rows: ${names.join()}`)
-  if (
-    await page
-      .getByRole('menuitem', { name: /^模型/ })
-      .isVisible()
-      .catch(() => false)
-  )
-    throw new Error('still has a second level')
+  if (names.join() !== 'Fake Small (default),Fake Large') throw new Error(`rows: ${names.join()}`)
   await shot('model-menu')
-  await page.keyboard.press('Escape')
-  await sleep(250)
+  await closeModelMenu()
   if ((await modelTrigger().getAttribute('aria-expanded')) === 'true') throw new Error('Escape left the menu open')
 })
 
-// A CLI's own logo names the CLI, not the maker of every model it happens to list.
-await scenario('model marks: an unidentifiable model gets a neutral mark, never a brand', async () => {
-  await modelTrigger().click()
-  await sleep(300)
-  const marks = await page
-    .getByRole('group', { name: FAKE, exact: true })
-    .getByRole('menuitemradio')
-    .evaluateAll((rows) => rows.map((row) => row.querySelector('[data-cli-mark]')?.getAttribute('data-cli-mark')))
-  if (marks.join() !== 'unknown,unknown') throw new Error(`model marks: ${marks.join()}`)
-  await page.keyboard.press('Escape')
-  await sleep(250)
-})
-
-await scenario("flat menu: the harness's control is out of the row", async () => {
+// A CLI session keeps that same native control: the plugin adds the CLI's own controls
+// beside it rather than a second model picker.
+await scenario('seat: a CLI session keeps the harness model control too', async () => {
   const seats = await harnessSeatDisplays()
-  if (!seats.every((display) => display === 'none')) throw new Error(`harness seat: ${seats.join()}`)
-  const visibleNativeControls = await page
-    .locator('[data-slot="conversation.input.model"] button')
-    .filter({ visible: true })
-    .count()
-  if (visibleNativeControls !== 0) throw new Error('the harness model control is still visible')
+  if (!seats.every((display) => display !== 'none')) throw new Error(`harness seat hidden: ${seats.join()}`)
+  const controls = await page.locator('[data-slot="conversation.input.model"] button').filter({ visible: true }).count()
+  if (controls !== 1) throw new Error(`model controls on the composer: ${controls}`)
 })
 
-await scenario('flat menu: typing a name and Enter settles, and the trigger takes the name', async () => {
-  await modelTrigger().click()
-  await sleep(300)
+// The native picker keeps the keyboard contract: typing filters, Enter settles, and the
+// trigger takes the chosen name.
+await scenario('menu: typing a name and Enter settles, and the trigger takes the name', async () => {
+  await openModelList()
   await page.getByRole('searchbox').fill('Fake Large')
   await page.keyboard.press('Enter')
   await until(async () => (await modelTrigger().getAttribute('title')) === 'Fake Large', 'trigger naming Fake Large')
   // The row settles first and the menu closes on the next tick, so wait for both.
   await until(async () => (await modelTrigger().getAttribute('aria-expanded')) !== 'true', 'the menu to close')
-  await chooseModel(FAKE, 'Fake Small（默认）')
+  await chooseModel(FAKE, 'Fake Small (default)')
 })
 
-await scenario('flat menu: a press elsewhere closes it', async () => {
+await scenario('menu: a press elsewhere closes it', async () => {
   await modelTrigger().click()
   await sleep(300)
   await page.mouse.click(5, 5)
   await sleep(250)
-  if ((await page.getByRole('menuitemradio').count()) !== 0) throw new Error('list still open')
-})
-
-await scenario('flat menu: a press inside it keeps it open', async () => {
-  await modelTrigger().click()
-  await sleep(300)
-  // The padding beside the rows, halfway up: a corner of the box is outside the rounded card.
-  const card = await page.locator('.dsh-cli-model-menu').boundingBox()
-  const x = card.x + 2
-  const y = card.y + card.height / 2
-  const onCard = await page.evaluate(
-    ([px, py]) => {
-      const hit = document.elementFromPoint(px, py)
-      return hit?.closest('.dsh-cli-model-menu') !== null && hit?.closest('button') === null
-    },
-    [x, y],
-  )
-  if (!onCard) throw new Error("the press would miss the card's padding")
-  await page.mouse.click(x, y)
-  await sleep(250)
-  if ((await page.getByRole('menuitemradio').count()) === 0) throw new Error('the press closed the list')
-  await page.keyboard.press('Escape')
-  await sleep(250)
+  if ((await modelTrigger().getAttribute('aria-expanded')) === 'true') throw new Error('the menu is still open')
 })
 
 await scenario('model switch: the chosen model reaches the CLI before the prompt', async () => {
@@ -352,9 +315,46 @@ await scenario('model switch: the chosen model reaches the CLI before the prompt
 })
 
 await scenario('model switch mid-session: the next message runs on the new model', async () => {
-  await chooseModel(FAKE, 'Fake Small（默认）')
+  await chooseModel(FAKE, 'Fake Small (default)')
   await send('WHICH MODEL')
   await untilText('model=fake-small')
+})
+
+// Favorites are a section inside the harness's own picker, so a session the harness runs
+// can pin its current model there without a plugin menu of its own. This home signs in to
+// no provider, so the session has to take its current model from the CLI groups the picker
+// lists; then the section has something to add, list and remove.
+await scenario('favorites: a native session pins and unpins its current model', async () => {
+  await newSession('标准模式')
+  await chooseModel(FAKE, 'Fake Small (default)')
+  await until(
+    async () => (await modelTrigger().getAttribute('title')) === 'Fake Small (default)',
+    'the trigger naming the chosen model',
+  )
+  await modelTrigger().click()
+  await sleep(300)
+  const section = page.locator('.dsh-cli-native-favorites')
+  await until(() => section.isVisible(), 'the favorites section in the native menu')
+  const toggle = section.locator('[role="menuitemcheckbox"]')
+  if ((await toggle.getAttribute('aria-label')) !== 'Add current model to favorites')
+    throw new Error(`favorites toggle: ${await toggle.getAttribute('aria-label')}`)
+  await toggle.click()
+  const remove = page.getByRole('button', { name: 'Remove Fake Small (default) from favorites' })
+  await until(() => remove.isVisible(), 'the remove control of the saved favorite')
+  const entry = section.locator('[role="menuitem"]', { hasText: 'Fake Small (default) · Fake CLI' })
+  await until(() => entry.isVisible(), 'the saved favorite shortcut')
+  // The picker must stay open: the entry it now shows is inside it.
+  if ((await modelTrigger().getAttribute('aria-expanded')) !== 'true')
+    throw new Error('adding a favorite closed the menu')
+  await shot('native-favorites')
+  await remove.click()
+  await until(
+    async () => (await page.locator('.dsh-cli-native-favorites-remove').count()) === 0,
+    'the favorite to be gone',
+  )
+  if ((await entry.count()) !== 0) throw new Error('the shortcut is still listed')
+  await until(async () => (await toggle.getAttribute('aria-checked')) === 'false', 'the toggle to say not favorited')
+  await closeModelMenu()
 })
 
 // A refusal has no field of its own in ACP. A CLI that explains itself nowhere in the
@@ -441,7 +441,7 @@ await scenario('mode switch mid-session: the live CLI changes before the next pr
 // A PTC session runs the CLI through run_code; nothing refuses a CLI outright any more.
 await scenario('PTC: a CLI turn runs in a PTC session', async () => {
   await newSession('PTC')
-  await chooseModel(FAKE, 'Fake Small（默认）')
+  await chooseModel(FAKE, 'Fake Small (default)')
   await send('ptc echo')
   await untilText('echo: ptc echo')
   await idle('ptc echo')

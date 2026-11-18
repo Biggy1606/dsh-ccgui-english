@@ -1,9 +1,28 @@
 /**
- * Persistent model favorites and their section metadata, independent of the model menu UI.
+ * The user's favorite models, persisted in the browser and shared by every picker surface.
+ * A favorite is identified by the provider and the model id together; the section it was
+ * saved under is kept only for display, because the catalog can rename or drop providers.
  * @module dsh-ccgui/client/favorite-models
  */
-import type { MenuRow, MenuSection } from './menu-models.ts'
+import type { DirectoryReasoning } from './choices.ts'
 import type { Store } from './store.ts'
+
+/** One model row, which only the provider and the model id together identify. */
+export interface MenuRow {
+  readonly provider: string
+  readonly model: string
+  readonly name: string
+  /** Compact label shown beside the name, e.g. a CLI's usage cost multiplier. */
+  readonly description?: string
+  readonly reasoning?: DirectoryReasoning
+}
+
+/** One provider's rows in the harness's own model picker. */
+export interface MenuSection {
+  readonly id: string
+  readonly name: string
+  readonly rows: readonly MenuRow[]
+}
 
 export interface FavoriteModel {
   readonly section: Pick<MenuSection, 'id' | 'name'>
@@ -17,15 +36,6 @@ export interface FavoriteStorage {
 
 export interface FavoriteModels extends Store<readonly FavoriteModel[]> {
   setFavorite(section: Pick<MenuSection, 'id' | 'name'>, row: MenuRow, favorite: boolean): void
-}
-
-interface FavoriteRow extends MenuRow {
-  readonly favorite: boolean
-  readonly unavailable: boolean
-}
-
-export interface FavoriteSection extends Omit<MenuSection, 'rows'> {
-  readonly rows: readonly FavoriteRow[]
 }
 
 export const FAVORITE_MODELS_STORAGE_KEY = 'dsh-ccgui.favorite-models'
@@ -67,14 +77,18 @@ function parseRow(value: unknown): MenuRow | undefined {
   }
 }
 
-/** Parse persisted favorites, ignoring malformed entries and duplicate identities. */
+/**
+ * Read stored favorites, ignoring malformed entries and duplicates.
+ * @param raw - the stored JSON, or null when nothing is stored.
+ * @returns the favorites; empty ones add nothing to the picker.
+ */
 export function parseFavoriteModels(raw: string | null): readonly FavoriteModel[] {
   if (raw === null) return []
   let value: unknown
   try {
     value = JSON.parse(raw)
   } catch (_error: unknown) {
-    // A corrupt preference must not prevent the menu from opening.
+    // A corrupt preference should cost the user their favorites, not the plugin's start.
     return []
   }
   if (!Array.isArray(value)) return []
@@ -92,17 +106,26 @@ export function parseFavoriteModels(raw: string | null): readonly FavoriteModel[
   }, [])
 }
 
-function sameModel(left: MenuRow, right: MenuRow): boolean {
+/**
+ * Tell whether two rows name the same model; the provider and the id together identify it.
+ * @param left - one row.
+ * @param right - another row.
+ * @returns true when both name the same model.
+ */
+export function sameModel(left: MenuRow, right: MenuRow): boolean {
   return left.provider === right.provider && left.model === right.model
 }
 
-/** Create an observable store backed by localStorage when it is available. */
+/**
+ * @param storage - where the favorites are kept; the browser's localStorage in the harness.
+ * @returns the favorites, loaded from storage.
+ */
 export function createFavoriteModels(storage: FavoriteStorage): FavoriteModels {
   let favorites: readonly FavoriteModel[] = []
   try {
     favorites = parseFavoriteModels(storage.getItem(FAVORITE_MODELS_STORAGE_KEY))
   } catch (_error: unknown) {
-    // Blocked storage leaves an in-memory store for this session.
+    // Storage can be blocked (private modes, policies); the session then keeps them in memory.
   }
   let listeners: readonly (() => void)[] = []
   return {
@@ -120,52 +143,9 @@ export function createFavoriteModels(storage: FavoriteStorage): FavoriteModels {
       try {
         storage.setItem(FAVORITE_MODELS_STORAGE_KEY, JSON.stringify(favorites))
       } catch (_error: unknown) {
-        // Keep the change in memory when storage is blocked.
+        // The change still applies for this run; only remembering it across restarts is lost.
       }
       for (const listener of listeners) listener()
     },
   }
-}
-
-function sectionFor(entry: FavoriteModel, sections: readonly MenuSection[]): Pick<MenuSection, 'id' | 'name'> {
-  const { provider, model } = entry.row
-  const vendor = model.split('/')[0]
-  return (
-    sections.find((section) => section.id === `${provider}/${vendor}` && model.includes('/')) ??
-    sections.find((section) => section.id === provider) ??
-    sections.find((section) => section.id === entry.section.id) ??
-    entry.section
-  )
-}
-
-/** Arrange favorites within their sections; hide absence until the provider catalog is authoritative. */
-export function arrangeFavoriteSections(
-  sections: readonly MenuSection[],
-  favorites: readonly FavoriteModel[],
-  isProviderReady: (provider: string) => boolean,
-): readonly FavoriteSection[] {
-  const rows = sections.flatMap((section) => section.rows)
-  const missing = favorites
-    .filter((entry) => isProviderReady(entry.row.provider) && !rows.some((row) => sameModel(row, entry.row)))
-    .map((entry) => ({ ...entry, section: sectionFor(entry, sections) }))
-  const extraSections = missing
-    .filter((entry) => !sections.some((section) => section.id === entry.section.id))
-    .filter(
-      (entry, index, entries) => entries.findIndex((candidate) => candidate.section.id === entry.section.id) === index,
-    )
-    .map((entry) => ({ ...entry.section, rows: [] }))
-  return [...sections, ...extraSections].map((section) => {
-    const marked = section.rows.map((row) => ({
-      ...row,
-      favorite: favorites.some((entry) => sameModel(entry.row, row)),
-      unavailable: false,
-    }))
-    const absent = missing
-      .filter((entry) => entry.section.id === section.id)
-      .map((entry) => ({ ...entry.row, favorite: true, unavailable: true }))
-    return {
-      ...section,
-      rows: [...marked.filter((row) => row.favorite), ...absent, ...marked.filter((row) => !row.favorite)],
-    }
-  })
 }

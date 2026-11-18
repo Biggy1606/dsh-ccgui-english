@@ -6,11 +6,10 @@
 import { useState } from 'react'
 import type { ReactElement } from 'react'
 import type { DirectorySelection, DirectoryState } from './choices.ts'
-import type { FavoriteModel, FavoriteModels } from './favorite-models.ts'
-import type { MenuRow, MenuSection } from './menu-models.ts'
+import type { FavoriteModel, FavoriteModels, MenuRow, MenuSection } from './favorite-models.ts'
+import { sameModel } from './favorite-models.ts'
 import { useStore } from './store.ts'
 import type { Store } from './store.ts'
-import { isCliRoute } from '../constants.ts'
 
 interface NativeFavoritesProps {
   readonly available: boolean
@@ -27,15 +26,21 @@ const ROW_CLASS = 'dsh-cli-native-favorites-row'
 const LABEL_CLASS = 'dsh-cli-native-favorites-label'
 const REMOVE_CLASS = 'dsh-cli-native-favorites-remove'
 
+// Metrics follow the harness's own option rows (34px, radius-md, 13px/20px), so the section
+// reads as part of the menu rather than as another plugin's list.
 export const NATIVE_FAVORITES_STYLES = `
-.${GROUP_CLASS} { border-top: 1px solid var(--dsw-alias-border-subtle); padding: 8px 0 4px; }
+.${GROUP_CLASS} { border-top: 1px solid var(--dsw-alias-border-l1); padding: 4px 0; font-size: 13px; line-height: 20px; }
 .${LABEL_CLASS} { padding: 4px 12px; color: var(--dsw-alias-label-secondary); font-size: 12px; }
-.${ROW_CLASS} { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
-.${ROW_CLASS} > button { border: 0; border-radius: var(--dsw-radius-sm); background: transparent; color: var(--dsw-alias-label-primary); cursor: pointer; font: inherit; text-align: left; }
-.${ROW_CLASS} > button:first-child { flex: 1; min-width: 0; padding: 6px 4px; }
-.${ROW_CLASS} > button:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+.${ROW_CLASS} { display: flex; align-items: center; gap: 4px; padding: 0 4px; }
+.${ROW_CLASS} > button { border: 0; border-radius: var(--dsw-radius-md); background: transparent; color: var(--dsw-alias-label-primary); font: inherit; cursor: pointer; }
+.${ROW_CLASS} > button:first-child {
+  flex: 1; min-width: 0; display: block; height: 34px; padding: 0 8px; line-height: 34px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;
+}
+@media (hover: hover) { .${ROW_CLASS} > button:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); } }
+.${ROW_CLASS} > button:focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: -2px; }
 .${ROW_CLASS} > button:disabled { opacity: .55; cursor: default; }
-.${REMOVE_CLASS} { padding: 5px 8px; }
+.${REMOVE_CLASS} { flex: none; width: 34px; height: 34px; padding: 0; }
 `
 
 function currentModel(state: DirectoryState): { section: Pick<MenuSection, 'id' | 'name'>; row: MenuRow } | undefined {
@@ -67,12 +72,13 @@ function FavoriteToggle({
         type="button"
         role="menuitemcheckbox"
         aria-checked={favorite}
+        aria-label={favorite ? 'Remove current model from favorites' : 'Add current model to favorites'}
         disabled={disabled}
         onClick={() => {
           favorites.setFavorite(current.section, current.row, !favorite)
         }}
       >
-        {favorite ? '★ Remove current model from favorites' : '☆ Add current model to favorites'}
+        {favorite ? '★ Favorited' : '☆ Add to favorites'}
       </button>
     </div>
   )
@@ -112,7 +118,7 @@ function FavoriteShortcut({
       <button
         type="button"
         className={REMOVE_CLASS}
-        aria-label={`Remove ${row.name} from favorites`}
+        aria-label={`Remove ${row.name} from ${section.name} favorites`}
         disabled={disabled}
         onClick={() => {
           favorites.setFavorite(section, row, false)
@@ -131,10 +137,9 @@ export function NativeFavorites(props: NativeFavoritesProps): ReactElement | nul
   const saved = useStore(favorites)
   const [pending, setPending] = useState(false)
   const current = currentModel(state)
-  if (!available || isCliRoute(state.current?.provider)) return null
-  const isFavorite = saved.some(
-    (entry) => entry.row.provider === current?.row.provider && entry.row.model === current.row.model,
-  )
+  // Nothing to offer means nothing to show: an empty group would leave a separator line.
+  if (!available || (current === undefined && saved.length === 0)) return null
+  const isFavorite = current !== undefined && saved.some((entry) => sameModel(entry.row, current.row))
   const choose = (row: MenuRow): void => {
     setPending(true)
     void select({ provider: row.provider, model: row.model })

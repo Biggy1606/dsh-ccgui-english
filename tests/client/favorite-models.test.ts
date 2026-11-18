@@ -1,7 +1,6 @@
 /** Tests persistent favorites and catalog-aware model section arrangement. */
 import { describe, expect, it } from 'vitest'
 import {
-  arrangeFavoriteSections,
   createFavoriteModels,
   FAVORITE_MODELS_STORAGE_KEY,
   parseFavoriteModels,
@@ -81,32 +80,5 @@ describe('favorite models', () => {
     const store = createFavoriteModels(memory())
     store.setFavorite(section, { ...row, provider: 'dsh' }, true)
     expect(store.getSnapshot()).toEqual([{ section, row: { ...row, provider: 'dsh' } }])
-  })
-
-  it('sorts favorites per provider section without mutating and preserves metadata', () => {
-    const plain = { ...row, model: 'vendor/b', name: 'B' }
-    const sections = [{ ...section, rows: [plain, row, other] }]
-    const result = arrangeFavoriteSections(sections, [{ section, row }], () => true)
-    expect(result[0]?.rows.map((item) => [item.model, item.provider, item.favorite])).toEqual([
-      ['vendor/a', 'cli-one', true],
-      ['vendor/b', 'cli-one', false],
-      ['vendor/a', 'cli-two', false],
-    ])
-    expect(result[0]?.rows[0]).toMatchObject({ ...row, unavailable: false })
-    expect(sections[0]?.rows).toEqual([plain, row, other])
-  })
-
-  it('hides absent favorites until provider readiness and restores the current section', () => {
-    const favorite = { section, row }
-    const providerSection = { id: 'cli-one', name: 'One', rows: [{ ...row, model: 'b' }] }
-    expect(arrangeFavoriteSections([providerSection], [favorite], () => false)[0]?.rows).toHaveLength(1)
-    const result = arrangeFavoriteSections([providerSection], [favorite], () => true)
-    expect(result).toHaveLength(1)
-    expect(result[0]?.rows[0]).toEqual({ ...row, favorite: true, unavailable: true })
-    expect(arrangeFavoriteSections([], [favorite], () => true)).toEqual([
-      { ...section, rows: [{ ...row, favorite: true, unavailable: true }] },
-    ])
-    const vendorSection = { ...section, rows: [] }
-    expect(arrangeFavoriteSections([vendorSection], [{ section: providerSection, row }], () => true)).toHaveLength(1)
   })
 })
